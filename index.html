@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TypeOnpdf — All PDF Form Filler</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  
+  <link rel="apple-touch-icon" href="https://typeonpdf.sumteck.in/logo192.png">
+
+  <meta property="og:title" content="TypeOnpdf - All PDF Form Filler">
+  <meta property="og:description" content="Fill PDF forms directly in your browser without printing. 100% Secure & Fast.">
+  <meta property="og:url" content="https://typeonpdf.sumteck.in/">
+  <meta property="og:type" content="website">
+  
+  <meta property="og:image" content="https://typeonpdf.sumteck.in/logo512.png">
+  
+  <style>
+    #custom-install-popup {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  z-index: 9999;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  width: max-content;
+  max-width: 90vw;
+}
+#custom-install-popup.hidden {
+  display: none;
+}
+.install-btn-style {
+  background: #0ea5e9;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.install-btn-style:hover { background: #0284c7; }
+.close-btn-style { color: #94a3b8; font-size: 14px; padding: 4px; }
+    /* DESIGN TOKENS - LIGHT BLUE THEME */
+    :root {
+      --ink:          #0f172a; 
+      --ink-60:       #475569; 
+      --ink-20:       #cbd5e1; 
+      --paper:        #e0f2fe; 
+      --paper-2:      #bae6fd; 
+      --cream:        #ffffff; 
+      --accent:       #0ea5e9; 
+      --accent-soft:  #f0f9ff; 
+      --blue:         #6366f1; 
+      --radius-sm:    6px;
+      --radius:       12px;
+      --radius-lg:    20px;
+      --shadow-float: 0 8px 32px rgba(15, 23, 42, 0.08);
+      --font-head:    "DM Serif Display", Georgia, serif;
+      --font-body:    "DM Sans", system-ui, sans-serif;
+      --toolbar-h:    60px;
+      --t:            .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%; background: var(--paper); color: var(--ink);
+      font-family: var(--font-body); font-size: 15px;
+      -webkit-font-smoothing: antialiased; overscroll-behavior: none;
+    }
+
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input[type=number], input[type=color], input[type=text], select, textarea {
+      font-family: inherit; border: 1.5px solid var(--ink-20); border-radius: var(--radius-sm);
+      background: var(--cream); color: var(--ink); transition: border-color var(--t);
+    }
+    input[type=number]:focus, input[type=text]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+    #app { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+    /* Header */
+    #header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: var(--toolbar-h);
+      background: var(--cream); border-bottom: 1.5px solid var(--ink-20);
+      flex-shrink: 0; gap: 12px; z-index: 40; position: relative;
+    }
+    .header-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; transition: opacity var(--t); }
+    .header-logo {
+      width: 32px; height: 32px; background: var(--accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-logo svg { width: 18px; height: 18px; color: #fff; }
+    .header-title { font-family: var(--font-head); font-size: 1.15rem; letter-spacing: -.01em; color: var(--ink); }
+
+    #file-badge {
+      display: none; align-items: center; gap: 8px;
+      background: var(--paper-2); border: 1.5px solid var(--ink-20);
+      border-radius: 100px; padding: 4px 12px 4px 8px;
+      font-size: .8rem; font-weight: 500; color: var(--ink-60); max-width: 180px; overflow: hidden;
+    }
+    #file-badge.visible { display: flex; }
+    #file-badge svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--accent); }
+    #file-name-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Header Search Dropdown — Enhanced Forms Library */
+    .header-search-wrapper {
+      position: relative; margin-left: auto; margin-right: 12px;
+      display: flex; align-items: center;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      border-radius: 100px; padding: 3px 3px 3px 14px;
+      box-shadow: 0 2px 12px rgba(14, 165, 233, 0.35);
+      gap: 6px;
+    }
+    .search-lib-badge {
+      font-size: .65rem; font-weight: 700; color: rgba(255,255,255,0.9);
+      text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+      display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+    }
+    .search-lib-badge svg { width: 12px; height: 12px; color: #fff; }
+    #header-search-input {
+      width: 230px; height: 34px; padding: 0 14px 0 10px;
+      border-radius: 100px; border: none;
+      font-size: .85rem; background: #fff; transition: all var(--t);
+      color: var(--ink);
+    }
+    #header-search-input:focus { width: 280px; outline: none; box-shadow: inset 0 0 0 2px rgba(14, 165, 233, 0.4); }
+    #header-search-input::placeholder { color: #94a3b8; }
+    .header-search-icon { display: none; }
+    .mobile-search-btn, .mobile-search-close { display: none; }
+
+    #search-results-container {
+      position: absolute; top: calc(100% + 10px); right: 0; width: 360px;
+      background: #fff; border-radius: var(--radius); box-shadow: 0 8px 32px rgba(14,165,233,0.18); border: 2px solid rgba(14,165,233,0.25);
+      max-height: 340px; overflow-y: auto; z-index: 50; display: none;
+    }
+    #search-results-container.visible { display: block; }
+    .search-results-header {
+      padding: 10px 16px 8px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+      border-bottom: 1.5px solid var(--paper-2); display: flex; align-items: center; gap: 8px;
+      font-size: .75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; position: sticky; top: 0;
+    }
+    .search-results-header svg { width: 13px; height: 13px; flex-shrink: 0; }
+    
+    .result-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; border-bottom: 1px solid var(--paper-2);
+      cursor: pointer; text-align: left; transition: background 0.15s ease;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: var(--accent-soft); }
+    .result-info h4 { font-size: .9rem; margin-bottom: 2px; color: var(--ink); }
+    .result-info p { font-size: .75rem; color: var(--ink-60); }
+    .result-action { font-size: .75rem; font-weight: 600; color: var(--accent); padding-left: 12px; display: none; }
+    .result-item:hover .result-action { display: block; }
+
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; transition: opacity var(--t); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm);
+      font-size: .825rem; font-weight: 600; letter-spacing: .01em; transition: background var(--t), color var(--t), opacity var(--t); white-space: nowrap;
+    }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .btn-ghost { color: var(--ink-60); background: transparent; border: 1.5px solid transparent; }
+    .btn-ghost:hover { background: var(--paper-2); color: var(--ink); }
+    .btn-outline { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); }
+    .btn-outline:hover { background: var(--accent-soft); }
+    .btn-outline:disabled { opacity: .4; border-color: var(--ink-20); color: var(--ink-60); cursor: not-allowed; }
+    .btn-accent { background: var(--accent); color: #fff; border: 1.5px solid var(--accent); }
+    .btn-accent:hover { opacity: .88; }
+    .btn-accent:disabled { opacity: .4; border-color: transparent; cursor: not-allowed; }
+
+    /* Upload Screen */
+    #upload-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow-y: auto; }
+    #upload-screen.hidden { display: none; }
+    .upload-card { width: 100%; max-width: 480px; text-align: center; }
+    .upload-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px; background: var(--paper-2); color: var(--accent);
+      border-radius: 100px; padding: 4px 12px; font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 18px;
+    }
+    .upload-headline { font-family: var(--font-head); font-size: clamp(1.8rem,5vw,2.6rem); line-height: 1.15; margin-bottom: 12px; color: var(--ink); }
+    .upload-headline em { color: var(--accent); font-style: italic; }
+    .upload-sub { font-size: .9rem; color: var(--ink-60); line-height: 1.6; margin-bottom: 36px; }
+
+    #drop-zone {
+      border: 2px dashed var(--ink-20); border-radius: var(--radius-lg); padding: 40px 24px; background: var(--cream);
+      cursor: pointer; transition: border-color var(--t), background var(--t); position: relative;
+    }
+    #drop-zone:hover, #drop-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); }
+    #drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: none; }
+    .drop-icon { width: 56px; height: 56px; background: var(--paper-2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .drop-icon svg { width: 26px; height: 26px; color: var(--accent); }
+    .drop-title { font-size: 1rem; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+    .drop-sub { font-size: .82rem; color: var(--ink-60); }
+
+    .feature-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 28px; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; background: var(--cream); border-radius: 100px; border: 1px solid var(--ink-20); padding: 5px 12px; font-size: .78rem; color: var(--ink-60); font-weight: 500; }
+    .pill svg { width: 12px; height: 12px; color: var(--accent); }
+
+    /* Editor Screen */
+    #editor-screen { flex: 1; display: none; flex-direction: column; min-height: 0; overflow: hidden; }
+    #editor-screen.visible { display: flex; }
+
+    #toolbar {
+      display: flex; align-items: center; gap: 8px; padding: 0 16px; height: var(--toolbar-h); background: var(--cream);
+      border-bottom: 1.5px solid var(--ink-20); flex-shrink: 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    #toolbar::-webkit-scrollbar { display: none; }
+
+    .toolbar-sep { width: 1px; height: 22px; background: var(--ink-20); flex-shrink: 0; }
+    .toolbar-label { font-size: .75rem; color: var(--ink-60); font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+    .color-wrap { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
+    .color-wrap input[type=color] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: none; padding: 0; }
+    .color-swatch { width: 30px; height: 30px; border-radius: var(--radius-sm); border: 2px solid var(--ink-20); pointer-events: none; }
+    .color-wrap:hover .color-swatch { border-color: var(--ink); }
+
+    #font-size-input { width: 56px; height: 30px; padding: 0 8px; font-size: .825rem; text-align: center; }
+    #font-family-select { height: 30px; padding: 0 8px; font-size: .825rem; min-width: 160px; flex-shrink: 0; }
+
+    .tb-btn { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: var(--radius-sm); font-size: .8rem; font-weight: 600; flex-shrink: 0; transition: background var(--t), color var(--t); }
+    .tb-btn svg { width: 14px; height: 14px; }
+    .tb-btn-add { background: var(--accent-soft); color: var(--accent); }
+    .tb-btn-add:hover { background: var(--accent); color: #fff; }
+    .tb-btn-add.active { background: var(--accent); color: #fff; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.28); animation: pulse-accent 1.4s ease-in-out infinite; }
+    .tb-btn-img { background: #eef2ff; color: var(--blue); }
+    .tb-btn-img:hover { background: var(--blue); color: #fff; }
+    .tb-btn-img.active { background: var(--blue); color: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.28); animation: pulse-blue 1.4s ease-in-out infinite; }
+
+    @keyframes pulse-accent { 0%, 100% { box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.28); } 50% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.1); } }
+    @keyframes pulse-blue { 0%, 100% { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.28); } 50% { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.1); } }
+
+    .canvas-placing .canvas-container, .canvas-placing .upper-canvas { cursor: crosshair !important; touch-action: none !important; }
+    .tb-btn-delete { background: transparent; color: var(--ink-60); border: 1.5px solid var(--ink-20); }
+    .tb-btn-delete:hover { background: #fee2e2; color: #ef4444; border-color: #ef4444; }
+    .tb-btn-edit { background: #eef2ff; color: var(--blue); border: 1.5px solid transparent; transition: background var(--t), color var(--t), opacity var(--t), border-color var(--t); }
+    .tb-btn-edit:hover:not(.tb-btn-edit-disabled) { background: var(--blue); color: #fff; }
+    .tb-btn-edit.tb-btn-edit-disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+
+    .page-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .page-nav-btn { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1.5px solid var(--ink-20); background: var(--cream); display: flex; align-items: center; justify-content: center; transition: border-color var(--t), background var(--t); }
+    .page-nav-btn svg { width: 14px; height: 14px; }
+    .page-nav-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    .page-nav-btn:disabled { opacity: .35; cursor: not-allowed; }
+    #page-indicator { font-size: .8rem; color: var(--ink-60); font-weight: 500; white-space: nowrap; }
+
+    #canvas-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; background: var(--paper); display: flex; justify-content: center; padding: 32px 20px; touch-action: pan-x pan-y; }
+    #pdf-wrapper { position: relative; display: inline-block; box-shadow: var(--shadow-float); border-radius: 4px; background: #fff; flex-shrink: 0; touch-action: pan-x pan-y; }
+    #pdf-render-canvas { display: block; border-radius: 4px; }
+    #fabric-canvas-el { position: absolute; top: 0; left: 0; border-radius: 4px; }
+    .canvas-container { position: absolute !important; top: 0 !important; left: 0 !important; touch-action: auto; }
+    .upper-canvas, .lower-canvas { touch-action: auto; }
+
+    /* Transparent placement overlay */
+    #placement-overlay {
+      display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 50; cursor: crosshair; touch-action: none; -webkit-tap-highlight-color: transparent; background: transparent;
+    }
+
+    #status-bar { height: 36px; background: var(--cream); border-top: 1.5px solid var(--ink-20); display: flex; align-items: center; padding: 0 16px; gap: 16px; flex-shrink: 0; }
+    #status-hint { font-size: .75rem; color: var(--ink-60); font-weight: 500; }
+    #obj-count-label { font-size: .75rem; color: var(--ink-60); }
+
+    /* Loading & Toasts */
+    #loading-overlay { position: fixed; inset: 0; background: rgba(224, 242, 254, 0.88); backdrop-filter: blur(10px); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 16px; }
+    #loading-overlay.visible { display: flex; }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--ink-20); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-text { font-size: .9rem; color: var(--ink-60); font-weight: 500; }
+    
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--ink); color: #fff; border-radius: 100px; padding: 10px 20px; font-size: .83rem; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease; z-index: 1000; white-space: nowrap; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Edit Text Modal */
+    #edit-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(4px); display: none; align-items: flex-end; justify-content: center; z-index: 300; padding: 16px; }
+    #edit-modal-backdrop.visible { display: flex; }
+    #edit-modal { width: 100%; max-width: 520px; background: var(--cream); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-float); animation: slideUp .25s cubic-bezier(.4,0,.2,1); }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-title { font-family: var(--font-head); font-size: 1.1rem; margin-bottom: 14px; color: var(--ink); }
+    #edit-modal-textarea { width: 100%; min-height: 80px; border: 1.5px solid var(--ink-20); border-radius: var(--radius-sm); background: #fff; color: var(--ink); font-size: 1rem; padding: 10px 12px; resize: vertical; font-family: var(--font-body); transition: border-color var(--t); }
+    #edit-modal-textarea:focus { outline: none; border-color: var(--accent); }
+    
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+    .modal-btn { padding: 9px 20px; border-radius: var(--radius-sm); font-size: .875rem; font-weight: 600; transition: opacity var(--t), background var(--t); }
+    .modal-btn-cancel { background: var(--paper-2); color: var(--ink-60); }
+    .modal-btn-cancel:hover { background: var(--ink-20); color: var(--ink); }
+    .modal-btn-save { background: var(--accent); color: #fff; }
+    .modal-btn-save:hover { opacity: .88; }
+    .modal-btn-danger { background: #fee2e2; color: #ef4444; }
+    .modal-btn-danger:hover { background: #fca5a5; color: #b91c1c; }
+
+    /* Unsaved Changes Custom Modal */
+    #unsaved-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 400; padding: 16px; }
+    #unsaved-modal-backdrop.visible { display: flex; }
+    #unsaved-modal { width: 100%; max-width: 420px; background: var(--cream); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-float); animation: slideUp .25s cubic-bezier(.4,0,.2,1); }
+    .unsaved-text { font-size: 0.95rem; color: var(--ink-60); margin-bottom: 24px; line-height: 1.5; }
+    .unsaved-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+
+    @media (max-width: 900px) {
+      .header-search-wrapper { margin-right: 8px; padding: 3px 3px 3px 10px; }
+      #header-search-input { width: 170px; }
+      #header-search-input:focus { width: 210px; }
+      .search-lib-badge span { display: none; }
+    }
+    @media (max-width: 768px) { .btn span.btn-label { display: none; } }
+    @media (max-width: 640px) {
+      .header-title { font-size: 1rem; } #file-badge { display: none !important; } #canvas-scroll { padding: 16px 8px; }
+      .header-search-wrapper { padding: 0; background: none; box-shadow: none; margin-left: 0; display: none; }
+      #header.search-active .header-search-wrapper { display: flex; flex: 1; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); box-shadow: 0 2px 12px rgba(14, 165, 233, 0.35); border-radius: 100px; padding: 3px 3px 3px 10px; margin-right: 0; }
+      .mobile-search-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; flex-shrink: 0; box-shadow: 0 2px 8px rgba(14,165,233,0.4); }
+      .mobile-search-close { display: none; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: transparent; color: #fff; flex-shrink: 0; }
+      #header.search-active .header-brand, #header.search-active .header-actions { display: none; }
+      #header.search-active .mobile-search-btn { display: none; }
+      #header.search-active .mobile-search-close { display: flex; position: absolute; right: 0; top: 1px; z-index: 60; color: var(--ink-60); }
+      #header.search-active #header-search-input { display: block; width: 100%; height: 34px; z-index: 50; }
+      #header.search-active #search-results-container { position: absolute; top: calc(100% + 8px); left: 0; right: 0; width: 100%; z-index: 50; }
+      #header.search-active .search-lib-badge { display: none; }
+    }
+
+    /* ── TYPEWRITER MODE ── */
+    .tb-btn-typewriter {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: #fff; border: 1.5px solid transparent;
+    }
+    .tb-btn-typewriter:hover { opacity: .88; }
+    .tb-btn-typewriter.active {
+      background: linear-gradient(135deg, #5b21b6, #4c1d95);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.32);
+      animation: pulse-violet 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse-violet { 0%, 100% { box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.32); } 50% { box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.1); } }
+    /* While typewriter active, canvas cursor becomes text cursor */
+    .canvas-typewriter .canvas-container, .canvas-typewriter .upper-canvas { cursor: text !important; touch-action: none !important; }
+    /* Typewriter status hint pill */
+    #typewriter-hint {
+      display: none; align-items: center; gap: 8px; padding: 5px 14px;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff;
+      font-size: 11px; font-weight: 700; border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.3);
+      user-select: none; letter-spacing: .02em; white-space: nowrap;
+    }
+    #typewriter-hint.active { display: flex; }
+
+    /* ── VISITOR COUNTER ── */
+    .visitor-counter-card {
+      background-color: #e0f2fe;
+      border: 2px solid #7dd3fc;
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      max-width: 200px;
+      margin: 10px auto;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .visitor-counter-card h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #0369a1;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    #count-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #0c4a6e;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="custom-install-popup" class="hidden">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <img src="https://typeonpdf.sumteck.in/logo192.png" alt="Logo" style="width: 36px; height: 36px; border-radius: 8px;">
+    <div>
+      <div style="font-weight: bold; font-size: 14px;">TypeOnpdf ആപ്പ്</div>
+      <div style="font-size: 11px; opacity: 0.8;">വേഗത്തിൽ ഉപയോഗിക്കാൻ ഇൻസ്റ്റാൾ ചെയ്യൂ</div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <button id="install-btn" class="install-btn-style">Install</button>
+    <button id="close-install-btn" class="close-btn-style">✖</button>
+  </div>
+</div>
+<div id="app">
+
+  <header id="header">
+    
+    <div class="header-brand" style="display: flex; align-items: center; gap: 10px;">
+   <div class="header-logo" style="width: 45px; height: 45px;">
+        <img src="https://github.com/sumteck/typeonpdf/raw/main/logo.png" alt="TypeOnpdf Logo" style="width:100%; height:100%; object-fit:cover; border-radius: 8px;">
+   </div>
+   
+   <span class="header-title" style="font-size: 20px; font-weight: bold; font-family: sans-serif; color: #ffffff; -webkit-text-stroke: 1px #000000;">
+        Type<span style="color: #ff3b30; -webkit-text-stroke: 1px #000000;">On</span>pdf
+   </span>
+</div>
+
+    <div id="file-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span id="file-name-label">document.pdf</span>
+    </div>
+    <div class="header-search-wrapper" id="autocomplete-wrapper">
+      <div class="search-lib-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span>100+ Forms</span>
+      </div>
+      <button class="mobile-search-btn" id="mobile-search-toggle" title="Search Forms">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+      <input type="text" id="header-search-input" placeholder="Search forms (e.g. Nomination)..." autocomplete="off" />
+      <button class="mobile-search-close" id="mobile-search-close" title="Close Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div id="search-results-container"></div>
+    </div>
+
+    <div class="header-actions">
+      <label class="btn btn-ghost" title="Open PDF or Project">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span class="btn-label">Open PDF / Project</span>
+        <input type="file" accept=".pdf,.formfill,application/pdf,*/*" id="header-file-input" style="display:none" />
+      </label>
+
+      <button class="btn btn-outline" id="save-project-btn" disabled title="Save Project to continue later">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span class="btn-label">Save Draft</span>
+      </button>
+
+      <button class="btn btn-accent" id="download-btn" disabled title="Export as ready-to-print PDF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span class="btn-label">Export PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="upload-screen">
+    <div class="upload-card">
+      <div class="upload-eyebrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        No upload to servers · 100% in-browser
+      </div>
+      <h1 class="upload-headline">Fill PDF forms<br/><em>without printing</em></h1>
+      <p class="upload-sub">Upload a PDF or an existing Project file (.formfill) from your device below, or use the <strong>search bar above</strong> to find a template.</p>
+
+      <div id="drop-zone">
+        <input type="file" accept=".pdf,.formfill,application/pdf,*/*" id="main-file-input" />
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+        </div>
+        <div class="drop-title">Upload PDF or Project</div>
+        <div class="drop-sub">or tap to browse files</div>
+      </div>
+
+      <div class="feature-pills">
+        <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Add text</span>
+        <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Embed images</span>
+        <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg> Malayalam fonts</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor-screen">
+    <div id="toolbar">
+      <button class="tb-btn tb-btn-add" id="add-text-btn" title="Tap to activate — then tap the PDF where you want text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg> Add Text
+      </button>
+      <button class="tb-btn tb-btn-typewriter" id="typewriter-btn" title="Typewriter Mode — click PDF and type directly. Settings persist until you change them.">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+          <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M12 15h0M17 15h0M7 11h0M12 11h0M17 11h0M7 19v1M12 19v1M17 19v1"/>
+          <line x1="6" y1="8" x2="18" y2="8"/>
+        </svg> Typewriter
+      </button>
+      <button class="tb-btn tb-btn-img" id="add-image-btn" title="Select an image — then tap the PDF where you want it">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+        </svg> Add Image
+        <input type="file" accept="image/png,image/jpeg,image/webp" id="image-file-input" style="display:none" />
+      </button>
+      <div class="toolbar-sep"></div>
+
+      <span class="toolbar-label">Font</span>
+      <select id="font-family-select">
+        <optgroup label="Latin">
+          <option value="Helvetica">Helvetica</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Arial">Arial</option><option value="Georgia">Georgia</option>
+        </optgroup>
+        <optgroup label="Malayalam">
+          <option value="Noto Sans Malayalam">Noto Sans Malayalam</option><option value="Manjari">Manjari</option><option value="Chilanka">Chilanka</option><option value="Gayathri">Gayathri</option><option value="Meera Inimai">Meera Inimai</option><option value="Baloo Chettan 2">Baloo Chettan 2</option><option value="Mandaram">Mandaram (local)</option>
+        </optgroup>
+      </select>
+      <span class="toolbar-label">Size</span>
+      <input type="number" id="font-size-input" value="14" min="6" max="96" step="1" />
+      <span class="toolbar-label">Color</span>
+      <div class="color-wrap">
+        <div class="color-swatch" id="color-swatch" style="background:#12110f"></div>
+        <input type="color" id="text-color-input" value="#12110f" title="Text color" />
+      </div>
+      <div class="toolbar-sep"></div>
+
+      <button class="tb-btn tb-btn-delete" id="delete-btn" title="Delete selected (Del)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Delete
+      </button>
+      <button class="tb-btn tb-btn-edit tb-btn-edit-disabled" id="edit-text-btn" title="Edit selected text (single tap)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Text
+      </button>
+      <button class="tb-btn tb-btn-delete" id="clear-btn" title="Clear all from this page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Clear Page
+      </button>
+      <div class="toolbar-sep"></div>
+
+      <div class="page-nav">
+        <button class="page-nav-btn" id="prev-page-btn" disabled title="Previous page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span id="page-indicator">1 / 1</span>
+        <button class="page-nav-btn" id="next-page-btn" disabled title="Next page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+
+    <div id="canvas-scroll">
+      <div id="pdf-wrapper">
+        <canvas id="pdf-render-canvas"></canvas>
+        <canvas id="fabric-canvas-el"></canvas>
+        <div id="placement-overlay"></div>
+      </div>
+    </div>
+
+    <div id="status-bar">
+      <span id="status-hint">💡 Tap "Add Text" or "Add Image" to annotate the PDF</span>
+      <span id="typewriter-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;flex-shrink:0">
+          <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="18" y2="8"/>
+        </svg>
+        Typewriter Active — Tap PDF to type
+      </span>
+      <span id="obj-count-label"></span>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay"><div class="spinner"></div><p id="loading-text">Loading…</p></div>
+<div id="toast"></div>
+
+<div id="edit-modal-backdrop">
+  <div id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-text">
+    <div class="modal-title" id="modal-title-text">Edit Text</div>
+    <textarea id="edit-modal-textarea" rows="3" placeholder="Enter your text…" autocomplete="off" autocorrect="off" spellcheck="true"></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" id="modal-cancel-btn">Cancel</button>
+      <button class="modal-btn modal-btn-save"   id="modal-save-btn">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div id="unsaved-modal-backdrop">
+  <div id="unsaved-modal" role="dialog" aria-modal="true">
+    <div class="modal-title">Unsaved Changes</div>
+    <p class="unsaved-text">നിങ്ങൾ ചെയ്ത മാറ്റങ്ങൾ സേവ് ചെയ്തിട്ടില്ല. പുതിയ ഫോം തുറന്നാൽ ഇവ നഷ്ടപ്പെടും. എന്ത് ചെയ്യണം?</p>
+    <div class="unsaved-actions">
+      <button class="modal-btn modal-btn-cancel" id="unsaved-btn-cancel">Cancel</button>
+      <button class="modal-btn modal-btn-danger" id="unsaved-btn-discard">Discard & Open</button>
+      <button class="modal-btn modal-btn-save"   id="unsaved-btn-save">Save & Open</button>
+    </div>
+  </div>
+</div>
+<div class="visitor-counter-card">
+  <h3>👀VISITORS
+    <div id="count-value"></div>
+  </h3>
+</div>
+
+<script>
+'use strict';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let pdfDoc        = null;
+let originalBytes = null;
+let currentPage = 1;
+let totalPages  = 0;
+const RENDER_SCALE = Math.min(window.devicePixelRatio || 1, 2);
+
+const pageObjects = new Map();
+const pageFitScales = new Map();
+
+let fabricCanvas = null;
+let editModalTarget = null;
+let isAddingText  = false;
+let isAddingImage = false;
+let isTypewriterMode = false;  // NEW: Typewriter (persistent text placing) mode
+let pendingImageDataUrl = null;
+
+// NEW: Track unsaved changes
+let hasUnsavedChanges = false;
+
+// UI Elements
+const uploadScreen     = document.getElementById('upload-screen');
+const editorScreen     = document.getElementById('editor-screen');
+const mainFileInput    = document.getElementById('main-file-input');
+const headerFileInput  = document.getElementById('header-file-input');
+const imageFileInput   = document.getElementById('image-file-input');
+const dropZone         = document.getElementById('drop-zone');
+const pdfWrapper       = document.getElementById('pdf-wrapper');
+const renderCanvas     = document.getElementById('pdf-render-canvas');
+const addTextBtn       = document.getElementById('add-text-btn');
+const typewriterBtn    = document.getElementById('typewriter-btn');
+const typewriterHint   = document.getElementById('typewriter-hint');
+const addImageBtn      = document.getElementById('add-image-btn');
+const deleteBtn        = document.getElementById('delete-btn');
+const editTextBtn      = document.getElementById('edit-text-btn');
+const clearBtn         = document.getElementById('clear-btn');
+const downloadBtn      = document.getElementById('download-btn');
+const saveProjectBtn   = document.getElementById('save-project-btn');
+const fontSizeInput    = document.getElementById('font-size-input');
+const fontFamilySelect = document.getElementById('font-family-select');
+const textColorInput   = document.getElementById('text-color-input');
+const colorSwatch      = document.getElementById('color-swatch');
+const prevPageBtn      = document.getElementById('prev-page-btn');
+const nextPageBtn      = document.getElementById('next-page-btn');
+const pageIndicator    = document.getElementById('page-indicator');
+const statusHint       = document.getElementById('status-hint');
+const objCountLabel    = document.getElementById('obj-count-label');
+const fileBadge        = document.getElementById('file-badge');
+const fileNameLabel    = document.getElementById('file-name-label');
+const loadingOverlay   = document.getElementById('loading-overlay');
+const loadingText      = document.getElementById('loading-text');
+const toast            = document.getElementById('toast');
+const editModalBdrop   = document.getElementById('edit-modal-backdrop');
+const editModalArea    = document.getElementById('edit-modal-textarea');
+const modalCancelBtn   = document.getElementById('modal-cancel-btn');
+const modalSaveBtn     = document.getElementById('modal-save-btn');
+const placementOverlay = document.getElementById('placement-overlay');
+
+/* ── HEADER SEARCH DROPDOWN LOGIC ── */
+const libSearchInput = document.getElementById('header-search-input');
+const searchResultsContainer = document.getElementById('search-results-container');
+const autocompleteWrapper = document.getElementById('autocomplete-wrapper');
+const headerEl = document.getElementById('header');
+const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+const mobileSearchClose = document.getElementById('mobile-search-close');
+
+let formTemplates = [];
+
+// GitHub-ൽ നിന്ന് CSV ഡാറ്റ ലോഡ് ചെയ്യുന്ന ഫങ്ക്ഷൻ
+async function loadForms() {
+  try {
+    // forms.json ന് പകരം പുതിയ forms.csv വിളിക്കുന്നു
+    const response = await fetch('https://raw.githubusercontent.com/sumteck/typeonpdf/main/forms.csv?t=' + new Date().getTime());
+    const csvText = await response.text();
+
+    // വരികളായി തിരിക്കുന്നു
+    const lines = csvText.split('\n').filter(line => line.trim() !== '');
+
+    // ആദ്യത്തെ വരി (Heading) ഒഴിവാക്കി ബാക്കി ഡാറ്റ എടുക്കുന്നു
+    formTemplates = lines.slice(1).map(line => {
+      const [title, dept, url] = line.split(',');
+      
+      return {
+        title: title ? title.trim() : '',
+        dept: dept ? dept.trim() : '',
+        url: url ? url.trim() : ''
+      };
+    });
+
+    console.log("Forms loaded from CSV:", formTemplates);
+  } catch (error) {
+    console.error("Error loading forms from CSV:", error);
+  }
+}
+
+// ആപ്പ് തുടങ്ങുമ്പോൾ തന്നെ ലോഡ് ചെയ്യുക
+loadForms();
+
+const DUMMY_PDF_BASE64 = "JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0ZURlY29kZT4+CnN0cmVhbQp4nDPQM1Qo5ypUMFAwALJMLU31jBQsTAz1LBSKUrnCtRTyuQIVDA0UjE3NjHQslIoz0/PzSlLzUhPzSlPzdTLTS1LTE3PzShP1TBVAasxMQSIgtgAA6t8WGQplbmRzdHJlYW0KZW5kb2JqCgozIDAgb2JqCjg5CmVuZG9iagoKMSAwIG9iago8PC9UeXBlL1BhZ2UvTWVkaWFCb3ggWzAgMCA1OTUgODQyXS9SZXNvdXJjZXM8PC9Gb250PDwvRjEgNCAwIFI+Pj4+L0NvbnRlbnRzIDIgMCBSL1BhcmVudCA1IDAgUj4+CmVuZG9iagoKNSAwIG9iago8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkc1sxIDAgUl0+PgplbmRvYmoKCjYgMCBvYmoKPDwvVHlwZS9DYXRhbG9nL1BhZ2VzIDUgMCBSPj4KZW5kb2JqCgo0IDAgb2JqCjw8L1R5cGUvRm9udC9TdWJ0eXBlL1R5cGUxL0Jhc2VGb250L0hlbHZldGljYT4+CmVuZG9iagoKeHJlZgowIDcKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMjQ2IDAwMDAwIG4gCjAwMDAwMDAwMTkgMDAwMDAgbiAKMDAwMDAwMDIyNSAwMDAwMCBuIAowMDAwMDAwNDUyIDAwMDAwIG4gCjAwMDAwMDAzNTMgMDAwMDAgbiAKMDAwMDAwMDQwNCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgNy9Sb290IDYgMCBSPj4Kc3RhcnR4cmVmCjU0MAolJUVPRgo=";
+
+function renderSearchResults(query = "") {
+  const q = query.toLowerCase();
+  const filtered = formTemplates.filter(t => t.title.toLowerCase().includes(q) || t.dept.toLowerCase().includes(q));
+  searchResultsContainer.innerHTML = '';
+  // Always show a header
+  const hdr = document.createElement('div');
+  hdr.className = 'search-results-header';
+  hdr.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Government Forms Library ${filtered.length > 0 ? `<span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0;color:#0369a1">${filtered.length} result${filtered.length !== 1 ? 's' : ''}</span>` : ''}`;
+  searchResultsContainer.appendChild(hdr);
+  if (filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding: 16px; text-align: center; color: #888; font-size: 0.85rem;';
+    empty.textContent = 'No forms found.';
+    searchResultsContainer.appendChild(empty);
+  } else {
+    filtered.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'result-item';
+      div.innerHTML = `<div class="result-info"><h4>${item.title}</h4><p>${item.dept}</p></div><div class="result-action">Open →</div>`;
+      div.addEventListener('click', () => { loadTemplatePDF(item); });
+      searchResultsContainer.appendChild(div);
+    });
+  }
+}
+
+mobileSearchToggle.addEventListener('click', () => { headerEl.classList.add('search-active'); setTimeout(() => libSearchInput.focus(), 100); });
+mobileSearchClose.addEventListener('click', () => { headerEl.classList.remove('search-active'); searchResultsContainer.classList.remove('visible'); libSearchInput.value = ''; });
+libSearchInput.addEventListener('focus', () => { renderSearchResults(libSearchInput.value); searchResultsContainer.classList.add('visible'); });
+libSearchInput.addEventListener('input', (e) => { renderSearchResults(e.target.value); });
+document.addEventListener('click', (e) => { if (!autocompleteWrapper.contains(e.target)) { searchResultsContainer.classList.remove('visible'); } });
+
+/* ── CUSTOM UNSAVED CHANGES WARNING LOGIC ── */
+function promptUnsavedChanges() {
+  return new Promise((resolve) => {
+    if (!hasUnsavedChanges) { resolve('proceed'); return; }
+    
+    const backdrop = document.getElementById('unsaved-modal-backdrop');
+    backdrop.classList.add('visible');
+    
+    document.getElementById('unsaved-btn-cancel').onclick = () => {
+      backdrop.classList.remove('visible'); resolve('cancel');
+    };
+    document.getElementById('unsaved-btn-discard').onclick = () => {
+      backdrop.classList.remove('visible'); resolve('proceed');
+    };
+    document.getElementById('unsaved-btn-save').onclick = () => {
+      backdrop.classList.remove('visible');
+      saveProjectFile(); // Call the save logic
+      setTimeout(() => resolve('proceed'), 500); // Short delay to let download trigger smoothly
+    };
+  });
+}
+
+async function loadTemplatePDF(data) {
+  // Accept either a raw URL string or an object with {url, title}
+  const url   = (typeof data === 'string') ? data   : data.url;
+  const title = (typeof data === 'string') ? 'PDF Form' : data.title;
+
+  const action = await promptUnsavedChanges();
+  if (action === 'cancel') return;
+
+  searchResultsContainer.classList.remove('visible');
+  headerEl.classList.remove('search-active');
+
+  try {
+    // ── STEP 1: network fetch ──────────────────────────────────────────────
+    // We NEVER pass the raw URL string to pdfjsLib.getDocument() because
+    // GitHub raw URLs trigger range-request headers that pdf.js sends
+    // cross-origin and browsers can block. Instead we download the whole
+    // binary ourselves, then hand pdf.js a Uint8Array via the `data` key.
+    showLoading(`Fetching "${title}"…`);
+
+    let response;
+    try {
+      response = await fetch(url);
+    } catch (networkErr) {
+      throw new Error(`Network error — check your connection.\n(${networkErr.message})`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status} ${response.statusText}.`);
+    }
+
+    // ── STEP 2: read entire body as binary ────────────────────────────────
+    loadingText.textContent = `Downloading "${title}"…`;
+    let arrayBuffer;
+    try {
+      arrayBuffer = await response.arrayBuffer();
+    } catch (readErr) {
+      throw new Error(`Failed to read PDF bytes.\n(${readErr.message})`);
+    }
+
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      throw new Error('Server returned an empty file.');
+    }
+
+    // ── STEP 3: wrap in Uint8Array and feed to pdf.js via `data` ─────────
+    // Using { data: uint8Array } bypasses ALL cross-origin range requests.
+    loadingText.textContent = `Parsing "${title}"…`;
+    const uint8Array = new Uint8Array(arrayBuffer);
+    originalBytes    = uint8Array;               // keep for export
+
+    pdfDoc = await pdfjsLib.getDocument({ data: uint8Array.slice() }).promise;
+
+    // ── STEP 4: initialise editor state ──────────────────────────────────
+    totalPages = pdfDoc.numPages;
+    currentPage = 1;
+    pageObjects.clear();
+    pageFitScales.clear();
+
+    fileNameLabel.textContent = title + '.pdf';
+    fileBadge.classList.add('visible');
+    downloadBtn.disabled    = false;
+    saveProjectBtn.disabled = false;
+    uploadScreen.classList.add('hidden');
+    editorScreen.classList.add('visible');
+
+    await renderPage(currentPage);
+    hasUnsavedChanges = false;
+    showToast(`✅ Opened: ${title}`);
+
+  } catch (err) {
+    console.error('Template load error:', err);
+    // Surface the real reason so it's debuggable without opening DevTools
+    showToast(`❌ ${err.message || 'Could not load template.'}`, 4500);
+  } finally {
+    hideLoading();
+  }
+}
+function showLoading(msg = 'Please wait…') { loadingText.textContent = msg; loadingOverlay.classList.add('visible'); }
+function hideLoading() { loadingOverlay.classList.remove('visible'); }
+let toastTimer;
+function showToast(msg, duration = 2800) {
+  toast.textContent = msg; toast.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+}
+function updateObjCount() {
+  if (!fabricCanvas) return;
+  const n = fabricCanvas.getObjects().length;
+  objCountLabel.textContent = n > 0 ? `${n} item${n !== 1 ? 's' : ''} on this page` : '';
+}
+
+function openEditModal(itextObj) {
+  editModalTarget = itextObj;
+  const current = (itextObj.text || '').replace(/^Type here…$/, '');
+  editModalArea.value = current;
+  editModalBdrop.classList.add('visible');
+  setTimeout(() => editModalArea.focus(), 80);
+}
+function closeEditModal() { editModalBdrop.classList.remove('visible'); editModalTarget = null; }
+function applyEditModal() {
+  if (!editModalTarget) { closeEditModal(); return; }
+  const newText = editModalArea.value || ' ';
+  editModalTarget.set({ text: newText });
+  fabricCanvas.renderAll(); updateObjCount(); 
+  hasUnsavedChanges = true; // Mark as dirty
+  closeEditModal();
+}
+modalSaveBtn.addEventListener('click', applyEditModal);
+modalCancelBtn.addEventListener('click', closeEditModal);
+editModalBdrop.addEventListener('click', e => { if (e.target === editModalBdrop) closeEditModal(); });
+editModalArea.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') applyEditModal(); if (e.key === 'Escape') closeEditModal(); });
+
+async function handleFileSelect(file) { 
+  if (!file) return;
+  const action = await promptUnsavedChanges();
+  if (action === 'cancel') {
+    // Reset file inputs so the same file can be selected again if needed
+    mainFileInput.value = ''; headerFileInput.value = '';
+    return; 
+  }
+  
+  const name = file.name.toLowerCase();
+  if (file.type === 'application/pdf' || name.endsWith('.pdf')) {
+    loadPDF(file);
+  } else {
+    loadProjectFile(file);
+  }
+}
+
+/* ── SAVE/LOAD PROJECT LOGIC ── */
+function arrayBufferToBase64(buffer) {
+  let binary = ''; const bytes = new Uint8Array(buffer); const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) { binary += String.fromCharCode(bytes[i]); }
+  return window.btoa(binary);
+}
+
+function saveProjectFile() {
+  if (!pdfDoc || !originalBytes) return;
+  showLoading('Saving project...');
+  snapshotCurrentPage(); 
+  
+  const serializedPages = {};
+  pageObjects.forEach((objs, pageNum) => { serializedPages[pageNum] = objs; });
+  
+  const projectData = {
+    version: 1, filename: fileNameLabel.textContent,
+    pdfBase64: arrayBufferToBase64(originalBytes), pages: serializedPages
+  };
+  
+  const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = fileNameLabel.textContent.replace(/\.(pdf|formfill)$/i, '') + '_project.formfill';
+  a.click(); URL.revokeObjectURL(url);
+  
+  hasUnsavedChanges = false; // Reset warning since we just saved
+  hideLoading(); showToast('✅ Project saved successfully!');
+}
+
+async function loadProjectFile(file) {
+  showLoading('Loading project...');
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data.pdfBase64) throw new Error("Invalid format");
+      
+      const binaryString = window.atob(data.pdfBase64);
+      const len = binaryString.length; const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+      originalBytes = bytes;
+      
+      pdfDoc = await pdfjsLib.getDocument({ data: originalBytes.slice() }).promise;
+      totalPages = pdfDoc.numPages; currentPage = 1; pageFitScales.clear();
+      
+      pageObjects.clear();
+      for (const [pageNum, objs] of Object.entries(data.pages)) { pageObjects.set(parseInt(pageNum, 10), objs); }
+      
+      fileNameLabel.textContent = data.filename || file.name;
+      fileBadge.classList.add('visible'); downloadBtn.disabled = false; saveProjectBtn.disabled = false;
+      uploadScreen.classList.add('hidden'); editorScreen.classList.add('visible');
+      await renderPage(currentPage);
+      
+      hasUnsavedChanges = false; // Reset after load
+      showToast('✅ Project loaded successfully!');
+    } catch (err) {
+      console.error('Project load error:', err); showToast('❌ Invalid project file. Upload a .pdf or .formfill file.');
+    } finally { hideLoading(); }
+  };
+  reader.readAsText(file);
+}
+
+async function loadPDF(file) {
+  showLoading('Reading PDF…');
+  try {
+    originalBytes = new Uint8Array(await file.arrayBuffer());
+    pdfDoc      = await pdfjsLib.getDocument({ data: originalBytes.slice() }).promise;
+    totalPages  = pdfDoc.numPages; currentPage = 1;
+    pageObjects.clear(); fontBytesCache.clear(); pageFitScales.clear();
+    fileNameLabel.textContent = file.name; fileBadge.classList.add('visible'); 
+    downloadBtn.disabled = false; saveProjectBtn.disabled = false;
+    uploadScreen.classList.add('hidden'); editorScreen.classList.add('visible');
+    await renderPage(currentPage);
+    hasUnsavedChanges = false; // Reset after fresh load
+  } catch (err) {
+    console.error('PDF load error:', err); showToast('❌ Could not open this PDF. Try another file.');
+  } finally { hideLoading(); }
+}
+
+async function renderPage(pageNum) {
+  showLoading(`Rendering page ${pageNum} of ${totalPages}…`);
+  try {
+    const page = await pdfDoc.getPage(pageNum);
+    const scrollEl    = document.getElementById('canvas-scroll');
+    const availableW  = (scrollEl ? scrollEl.clientWidth : window.innerWidth) - 40;
+    const maxW        = Math.max(availableW, Math.min(availableW, 1600));
+    const unscaledVP   = page.getViewport({ scale: 1 });
+    const fitScale     = maxW / unscaledVP.width;
+    const renderVP     = page.getViewport({ scale: fitScale * RENDER_SCALE });
+    const displayW     = Math.round(unscaledVP.width  * fitScale);
+    const displayH     = Math.round(unscaledVP.height * fitScale);
+
+    pageFitScales.set(pageNum, { fitScale, displayW, displayH, vpW: unscaledVP.width, vpH: unscaledVP.height });
+
+    renderCanvas.width  = Math.round(renderVP.width); renderCanvas.height = Math.round(renderVP.height);
+    renderCanvas.style.width  = displayW + 'px'; renderCanvas.style.height = displayH + 'px';
+
+    const ctx = renderCanvas.getContext('2d');
+    ctx.clearRect(0, 0, renderCanvas.width, renderCanvas.height);
+    await page.render({ canvasContext: ctx, viewport: renderVP }).promise;
+
+    initFabricCanvas(displayW, displayH);
+    await restorePageObjects(pageNum);
+    updatePageNav();
+  } finally { hideLoading(); }
+}
+
+function initFabricCanvas(w, h) {
+  if (!fabricCanvas) {
+    fabricCanvas = new fabric.Canvas('fabric-canvas-el', { selection: true, preserveObjectStacking: true, stopContextMenu: true, fireRightClick: false, allowTouchScrolling: true });
+    
+    /* ── PLACEMENT MATH (MOBILE TOUCH BUG FIXED) ── */
+    const handlePlacement = (e) => {
+      if (!isAddingText && !isAddingImage && !isTypewriterMode) return;
+      // In typewriter mode, don't intercept if a text object is being edited
+      if (isTypewriterMode && fabricCanvas.getActiveObject() && fabricCanvas.getActiveObject().isEditing) return;
+      e.preventDefault(); e.stopPropagation();
+
+      const rect = fabricCanvas.upperCanvasEl.getBoundingClientRect();
+      const scaleX = fabricCanvas.getWidth() / rect.width;
+      const scaleY = fabricCanvas.getHeight() / rect.height;
+
+      let clientX, clientY;
+      if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; } 
+      else if (e.changedTouches && e.changedTouches.length > 0) { clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY; } 
+      else { clientX = e.clientX; clientY = e.clientY; }
+
+      const x = (clientX - rect.left) * scaleX; const y = (clientY - rect.top) * scaleY;
+
+      if (isAddingText) { placeText(x, y); } 
+      else if (isTypewriterMode) { placeText(x, y); }
+      else if (isAddingImage && pendingImageDataUrl) { const dataUrl = pendingImageDataUrl; cancelPlacementMode(); placeImage(dataUrl, x, y); }
+    };
+
+    fabricCanvas.upperCanvasEl.addEventListener('touchstart', handlePlacement, { passive: false });
+    fabricCanvas.upperCanvasEl.addEventListener('mousedown', handlePlacement);
+
+    // Track unsaved changes automatically when modifying canvas
+    const markDirty = () => { updateObjCount(); hasUnsavedChanges = true; };
+    fabricCanvas.on('object:modified', markDirty); 
+    fabricCanvas.on('object:added', markDirty); 
+    fabricCanvas.on('object:removed', markDirty);
+    
+    fabricCanvas.on('selection:created', syncToolbarToSelection); fabricCanvas.on('selection:updated', syncToolbarToSelection); fabricCanvas.on('selection:cleared', resetEditBtn);
+    fabricCanvas.on('mouse:dblclick', opt => { const target = opt.target; if (target && target.type === 'i-text') { if (target.isEditing) target.exitEditing(); fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); openEditModal(target); } });
+  }
+  fabricCanvas.setWidth(w); fabricCanvas.setHeight(h); fabricCanvas.calcOffset(); fabricCanvas.renderAll();
+  applyCanvasTouchAction();
+  const container = pdfWrapper.querySelector('.canvas-container'); if (container) { container.style.position = 'absolute'; container.style.top = '0'; container.style.left = '0'; }
+}
+
+function applyCanvasTouchAction() {
+  const placing = isAddingText || isAddingImage || isTypewriterMode;
+  // In typewriter mode, if actively editing an itext, allow scrolling again
+  const activeIsEditing = isTypewriterMode && fabricCanvas && fabricCanvas.getActiveObject() && fabricCanvas.getActiveObject().isEditing;
+  const action = (placing && !activeIsEditing) ? 'none' : 'auto';
+  const container = pdfWrapper.querySelector('.canvas-container'), upper = pdfWrapper.querySelector('.upper-canvas');
+  if (container) container.style.setProperty('touch-action', action, 'important');
+  if (upper) upper.style.setProperty('touch-action', action, 'important');
+}
+
+function activateTextMode() {
+  isAddingText = true; isAddingImage = false; pendingImageDataUrl = null;
+  isTypewriterMode = false;
+  addTextBtn.classList.add('active'); typewriterBtn.classList.remove('active'); addImageBtn.classList.remove('active'); pdfWrapper.classList.add('canvas-placing'); pdfWrapper.classList.remove('canvas-typewriter');
+  if (fabricCanvas) fabricCanvas.allowTouchScrolling = false;
+  applyCanvasTouchAction(); statusHint.textContent = '🎯 Tap anywhere on the PDF to place text';
+  typewriterHint.classList.remove('active');
+}
+
+function activateTypewriterMode() {
+  if (isTypewriterMode) { cancelPlacementMode(); return; }  // toggle off
+  isTypewriterMode = true; isAddingText = false; isAddingImage = false; pendingImageDataUrl = null;
+  typewriterBtn.classList.add('active'); addTextBtn.classList.remove('active'); addImageBtn.classList.remove('active');
+  pdfWrapper.classList.add('canvas-placing', 'canvas-typewriter');
+  if (fabricCanvas) fabricCanvas.allowTouchScrolling = false;
+  applyCanvasTouchAction();
+  statusHint.textContent = '';
+  typewriterHint.classList.add('active');
+}
+
+function activateImageMode(dataUrl) {
+  isAddingImage = true; isAddingText = false; pendingImageDataUrl = dataUrl;
+  addImageBtn.classList.add('active'); addTextBtn.classList.remove('active'); pdfWrapper.classList.add('canvas-placing');
+  if (fabricCanvas) fabricCanvas.allowTouchScrolling = false;
+  applyCanvasTouchAction(); statusHint.textContent = '🎯 Tap anywhere on the PDF to place the image';
+}
+
+function cancelPlacementMode() {
+  isAddingText = false; isAddingImage = false; isTypewriterMode = false; pendingImageDataUrl = null;
+  addTextBtn.classList.remove('active'); typewriterBtn.classList.remove('active'); addImageBtn.classList.remove('active');
+  pdfWrapper.classList.remove('canvas-placing', 'canvas-typewriter');
+  if (fabricCanvas) fabricCanvas.allowTouchScrolling = true;
+  applyCanvasTouchAction();
+  statusHint.textContent = '💡 Tap "Add Text", "Typewriter" or "Add Image" to annotate the PDF';
+  typewriterHint.classList.remove('active');
+}
+
+function placeText(x, y) {
+  if (!fabricCanvas) return;
+  const itext = new fabric.IText('', { 
+    left: x, top: y, originX: 'left', originY: 'top', 
+    fontSize: parseInt(fontSizeInput.value, 10) || 14, fill: textColorInput.value, fontFamily: fontFamilySelect.value, 
+    padding: 4, borderColor: '#0ea5e9', cornerColor: '#0ea5e9', cornerSize: 9, cornerStyle: 'circle', transparentCorners: false, selectable: true, evented: true, editable: true 
+  });
+  fabricCanvas.add(itext); fabricCanvas.setActiveObject(itext); fabricCanvas.renderAll();
+  if (isTypewriterMode) {
+    // Typewriter: directly enter editing mode, do NOT cancel mode — stay ready for next tap
+    itext.enterEditing();
+    itext.selectAll();
+    fabricCanvas.renderAll();
+    // Re-enable placement after user exits editing (clicks away or presses Escape)
+    const onExitEdit = () => {
+      itext.off('editing:exited', onExitEdit);
+      // Remove empty texts
+      if (!itext.text || itext.text.trim() === '') { fabricCanvas.remove(itext); fabricCanvas.renderAll(); updateObjCount(); }
+      // Stay in typewriter mode — do NOT cancel, just re-arm touch action
+      if (isTypewriterMode) applyCanvasTouchAction();
+    };
+    itext.on('editing:exited', onExitEdit);
+    applyCanvasTouchAction();
+  } else {
+    // Regular Add Text: open modal editor (existing behaviour)
+    itext.set('editable', false);
+    cancelPlacementMode();
+    openEditModal(itext);
+  }
+}
+
+function placeTextTypewriter(x, y) { placeText(x, y); }
+
+function placeImage(dataUrl, x, y) {
+  if (!fabricCanvas) return;
+  fabric.Image.fromURL(dataUrl, img => {
+    const maxDim = fabricCanvas.getWidth() * 0.5; if (img.width > maxDim || img.height > maxDim) { const scale = maxDim / Math.max(img.width, img.height); img.scale(scale); }
+    img.set({ left: x, top: y, originX: 'left', originY: 'top', borderColor: '#6366f1', cornerColor: '#6366f1', cornerSize: 9, cornerStyle: 'circle', transparentCorners: false, selectable: true, evented: true });
+    fabricCanvas.add(img); fabricCanvas.setActiveObject(img); fabricCanvas.renderAll(); statusHint.textContent = '🖼 Image added — drag and resize freely'; showToast('Image added — drag corners to resize');
+  });
+}
+
+function readImageFile(file) { if (!file || !fabricCanvas) return; const reader = new FileReader(); reader.onload = e => activateImageMode(e.target.result); reader.readAsDataURL(file); imageFileInput.value = ''; }
+
+function syncToolbarToSelection() {
+  const obj = fabricCanvas && fabricCanvas.getActiveObject(); const isText = !!(obj && obj.type === 'i-text');
+  editTextBtn.classList.toggle('tb-btn-edit-disabled', !isText); editTextBtn.title = isText ? 'Edit selected text' : 'Select a text field to edit';
+  if (isText) { if (obj.fontFamily) fontFamilySelect.value = obj.fontFamily; if (obj.fontSize) fontSizeInput.value = obj.fontSize; if (obj.fill) { textColorInput.value = obj.fill; colorSwatch.style.background = obj.fill; } }
+}
+function resetEditBtn() { editTextBtn.classList.add('tb-btn-edit-disabled'); editTextBtn.title = 'Select a text field to edit'; }
+function applyFontSize(val) { const size = parseInt(val, 10); if (!size || size < 1) return; const obj = fabricCanvas && fabricCanvas.getActiveObject(); if (obj && obj.type === 'i-text') { obj.set('fontSize', size); fabricCanvas.renderAll(); hasUnsavedChanges = true; } }
+function applyFontFamily(val) { const obj = fabricCanvas && fabricCanvas.getActiveObject(); if (obj && obj.type === 'i-text') { obj.set('fontFamily', val); fabricCanvas.renderAll(); hasUnsavedChanges = true; } }
+function applyColor(val) { colorSwatch.style.background = val; const obj = fabricCanvas && fabricCanvas.getActiveObject(); if (obj && obj.type === 'i-text') { obj.set('fill', val); fabricCanvas.renderAll(); hasUnsavedChanges = true; } }
+
+const SERIALISE_PROPS = ['type', 'left', 'top', 'scaleX', 'scaleY', 'angle', 'width', 'height', 'originX', 'originY', 'text', 'fontFamily', 'fontSize', 'fill', 'fontWeight', 'fontStyle', 'src', 'crossOrigin'];
+function snapshotCurrentPage() { if (!fabricCanvas) return; pageObjects.set(currentPage, fabricCanvas.getObjects().map(o => o.toObject(SERIALISE_PROPS))); }
+
+async function restorePageObjects(pageNum) {
+  if (!fabricCanvas) return; fabricCanvas.clear(); const saved = pageObjects.get(pageNum); if (!saved || saved.length === 0) return;
+  for (const objData of saved) { 
+    await new Promise(resolve => fabric.util.enlivenObjects([objData], ([obj]) => { 
+      if (obj) { 
+        if (obj.type === 'i-text') { obj.set({ selectable: true, evented: true, editable: false, padding: 4, borderColor: '#0ea5e9', cornerColor: '#0ea5e9', cornerSize: 9, cornerStyle: 'circle', transparentCorners: false }); } 
+        else if (obj.type === 'image') { obj.set({ selectable: true, evented: true, borderColor: '#6366f1', cornerColor: '#6366f1', cornerSize: 9, cornerStyle: 'circle', transparentCorners: false }); }
+        fabricCanvas.add(obj); 
+      } 
+      resolve(); 
+    })); 
+  }
+  fabricCanvas.renderAll(); updateObjCount();
+}
+
+async function goToPage(num) { if (num < 1 || num > totalPages) return; snapshotCurrentPage(); currentPage = num; await renderPage(currentPage); }
+function updatePageNav() { pageIndicator.textContent = `${currentPage} / ${totalPages}`; prevPageBtn.disabled = currentPage <= 1; nextPageBtn.disabled = currentPage >= totalPages; }
+
+const MALAYALAM_FONT_URLS = {
+  'Noto Sans Malayalam': 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-malayalam@4.5.0/files/noto-sans-malayalam-malayalam-400-normal.woff',
+  'Manjari': 'https://cdn.jsdelivr.net/npm/@fontsource/manjari@4.5.0/files/manjari-malayalam-400-normal.woff',
+  'Chilanka': 'https://cdn.jsdelivr.net/npm/@fontsource/chilanka@4.5.0/files/chilanka-malayalam-400-normal.woff',
+  'Gayathri': 'https://cdn.jsdelivr.net/npm/@fontsource/gayathri@4.5.0/files/gayathri-malayalam-400-normal.woff',
+  'Meera Inimai': 'https://cdn.jsdelivr.net/npm/@fontsource/meera-inimai@4.5.0/files/meera-inimai-latin-400-normal.woff',
+  'Baloo Chettan 2': 'https://cdn.jsdelivr.net/npm/@fontsource/baloo-chettan-2@4.5.0/files/baloo-chettan-2-latin-400-normal.woff',
+  'Mandaram': './mandaram.ttf',
+};
+const fontBytesCache = new Map(); const injectedFontFaces = new Set();
+async function ensureFontFaceInjected(fontName) {
+  if (injectedFontFaces.has(fontName)) return; const url = MALAYALAM_FONT_URLS[fontName]; if (!url) return;
+  const style = document.createElement('style'); style.textContent = `@font-face { font-family: '${fontName}'; src: url('${url}') format('${url.endsWith('.ttf') ? 'truetype' : 'woff'}'); font-weight: normal; font-style: normal; }`;
+  document.head.appendChild(style); injectedFontFaces.add(fontName); try { await document.fonts.load(`14px '${fontName}'`); } catch (_) {}
+}
+function dataURLToUint8Array(dataURL) {
+  const [header, b64] = dataURL.split(','); const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png'; const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i); return { bytes, mimeType };
+}
+
+/* ── PDF EXPORT ── */
+async function downloadFilledPDF() {
+  showLoading('Preparing your PDF…');
+  try {
+    snapshotCurrentPage(); const exportDoc = await PDFLib.PDFDocument.create(); const srcDoc = await PDFLib.PDFDocument.load(originalBytes, { ignoreEncryption: true });
+    const srcPages = srcDoc.getPages(); const embeddedPages = await exportDoc.embedPages(srcPages);
+    for (let i = 0; i < embeddedPages.length; i++) {
+      const pageNum = i + 1; const srcPage = srcPages[i]; const embed = embeddedPages[i]; const R = srcPage.getRotation().angle || 0;
+      let visualW = embed.width, visualH = embed.height; if (R === 90 || R === 270) { visualW = embed.height; visualH = embed.width; }
+      const newPage = exportDoc.addPage([visualW, visualH]);
+      if (R === 0) { newPage.drawPage(embed, { x: 0, y: 0 }); } else if (R === 90) { newPage.drawPage(embed, { x: 0, y: embed.width, rotate: PDFLib.degrees(-90) }); } else if (R === 180) { newPage.drawPage(embed, { x: embed.width, y: embed.height, rotate: PDFLib.degrees(-180) }); } else if (R === 270) { newPage.drawPage(embed, { x: embed.height, y: 0, rotate: PDFLib.degrees(-270) }); }
+      const objs = pageObjects.get(pageNum); if (!objs || objs.length === 0) continue;
+      let displayW, displayH; const storedFit = pageFitScales.get(pageNum);
+      if (storedFit) { displayW = storedFit.displayW; displayH = storedFit.displayH; } else { const pdfJsPage = await pdfDoc.getPage(pageNum); const unscaledVP = pdfJsPage.getViewport({ scale: 1 }); displayW = Math.round(unscaledVP.width); displayH = Math.round(unscaledVP.height); }
+      const offCanvasEl = document.createElement('canvas'); offCanvasEl.width = displayW; offCanvasEl.height = displayH;
+      const offCanvas = new fabric.StaticCanvas(offCanvasEl, { width: displayW, height: displayH, backgroundColor: null });
+      const liveObjects = await new Promise(resolve => fabric.util.enlivenObjects(objs, enlivened => resolve(enlivened)));
+      for (const obj of liveObjects) { if (obj.type === 'i-text' && MALAYALAM_FONT_URLS[obj.fontFamily]) { await ensureFontFaceInjected(obj.fontFamily); } obj.set({ active: false }); offCanvas.add(obj); }
+      offCanvas.renderAll(); const PNG_SCALE = 3; const dataUrl = offCanvas.toDataURL({ format: 'png', multiplier: PNG_SCALE });
+      const { bytes } = dataURLToUint8Array(dataUrl); const pdfImg = await exportDoc.embedPng(bytes);
+      newPage.drawImage(pdfImg, { x: 0, y: 0, width: visualW, height: visualH });
+    }
+    const pdfBytes = await exportDoc.save({ useObjectStreams: false }); const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileNameLabel.textContent.replace(/\.(pdf|formfill)$/i, '') + '_filled.pdf'; a.click(); URL.revokeObjectURL(url);
+    showToast('✅ PDF downloaded successfully!');
+  } catch (err) { console.error('Export error:', err); showToast('❌ Export failed — check console for details.'); } finally { hideLoading(); }
+}
+
+// ── EVENT LISTENERS ──
+mainFileInput.addEventListener('change', e => handleFileSelect(e.target.files[0])); headerFileInput.addEventListener('change', e => handleFileSelect(e.target.files[0]));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); }); dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFileSelect(e.dataTransfer.files[0]); });
+addTextBtn.addEventListener('click', () => { if (!pdfDoc) { showToast('⚠️ Open a PDF first'); return; } if (isAddingText) cancelPlacementMode(); else activateTextMode(); });
+typewriterBtn.addEventListener('click', () => { if (!pdfDoc) { showToast('⚠️ Open a PDF first'); return; } activateTypewriterMode(); });
+addImageBtn.addEventListener('click', () => { if (!pdfDoc) { showToast('⚠️ Open a PDF first'); return; } if (isAddingImage) cancelPlacementMode(); else imageFileInput.click(); });
+imageFileInput.addEventListener('change', e => { const file = e.target.files[0]; if (file) readImageFile(file); });
+deleteBtn.addEventListener('click', () => { if (!fabricCanvas) return; const active = fabricCanvas.getActiveObjects(); if (!active.length) { showToast('Select an item first.'); return; } active.forEach(o => fabricCanvas.remove(o)); fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); hasUnsavedChanges = true; });
+editTextBtn.addEventListener('click', () => { if (!fabricCanvas) return; const obj = fabricCanvas.getActiveObject(); if (!obj || obj.type !== 'i-text') { showToast('Select a text field first.'); return; } openEditModal(obj); });
+clearBtn.addEventListener('click', () => { if (!fabricCanvas) return; fabricCanvas.clear(); fabricCanvas.renderAll(); updateObjCount(); hasUnsavedChanges = true; showToast('Page cleared.'); });
+document.addEventListener('keydown', e => {
+  if (!fabricCanvas) return; if (editModalBdrop.classList.contains('visible') || document.getElementById('unsaved-modal-backdrop').classList.contains('visible')) return; const active = fabricCanvas.getActiveObject(); if (active && active.isEditing) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') { const objs = fabricCanvas.getActiveObjects(); if (objs.length) { objs.forEach(o => fabricCanvas.remove(o)); fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); hasUnsavedChanges = true; } }
+  if (e.key === 'Escape') { if (isAddingText || isAddingImage || isTypewriterMode) { cancelPlacementMode(); return; } fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); }
+});
+fontSizeInput.addEventListener('input', e => applyFontSize(e.target.value));
+fontFamilySelect.addEventListener('change', async e => { const font = e.target.value; applyFontFamily(font); if (MALAYALAM_FONT_URLS[font]) { showLoading(`Loading ${font}…`); await ensureFontFaceInjected(font); hideLoading(); if (fabricCanvas) fabricCanvas.renderAll(); } });
+textColorInput.addEventListener('input', e => applyColor(e.target.value));
+prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1)); nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1)); 
+downloadBtn.addEventListener('click', downloadFilledPDF);
+saveProjectBtn.addEventListener('click', saveProjectFile);
+
+let resizeTimer; let lastWindowWidth = window.innerWidth;
+window.addEventListener('resize', () => { if (window.innerWidth === lastWindowWidth) return; lastWindowWidth = window.innerWidth; clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (pdfDoc) { snapshotCurrentPage(); renderPage(currentPage); } }, 300); });
+  // ── VISITOR COUNTER ──
+  fetch('https://sumteck.tksumesh85.workers.dev?site=typeonpdf')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('count-value').innerText = data.views;
+    })
+    .catch(err => {
+      document.getElementById('count-value').innerText = "0";
+      console.error("Error loading counter", err);
+    });
+
+  // Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        })
+        .catch(error => {
+          console.error('ServiceWorker registration failed: ', error);
+        });
+    });
+  }
+  // --- Install PWA Logic ---
+let deferredPrompt;
+const installPopup = document.getElementById('custom-install-popup');
+const installBtn = document.getElementById('install-btn');
+const closeInstallBtn = document.getElementById('close-install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // ബ്രൗസറിന്റെ ഡീഫോൾട്ട് പോപ്പ്അപ്പ് ബ്ലോക്ക് ചെയ്യുന്നു
+  e.preventDefault();
+  // ഇവന്റ് സേവ് ചെയ്തു വെക്കുന്നു
+  deferredPrompt = e;
+  // നമ്മുടെ കസ്റ്റം പോപ്പ്അപ്പ് കാണിക്കുന്നു
+  installPopup.classList.remove('hidden');
+});
+
+installBtn.addEventListener('click', async () => {
+  // നമ്മുടെ പോപ്പ്അപ്പ് മറയ്ക്കുന്നു
+  installPopup.classList.add('hidden');
+  
+  if (deferredPrompt) {
+    // യൂസറിന് ഒറിജിനൽ ഇൻസ്റ്റാൾ സ്ക്രീൻ കാണിക്കുന്നു
+    deferredPrompt.prompt();
+    // യൂസർ ഇൻസ്റ്റാൾ ചെയ്തോ എന്ന് ചെക്ക് ചെയ്യുന്നു
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response: ${outcome}`);
+    deferredPrompt = null;
+  }
+});
+
+closeInstallBtn.addEventListener('click', () => {
+  installPopup.classList.add('hidden');
+});
+</script>
+</body>
+</html>
