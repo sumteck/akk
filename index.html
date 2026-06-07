@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memorandum – Sign the Petition</title>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    /* ─── CSS VARIABLES ────────────────────────────────────── */
+    :root {
+      --ink:       #1a1209;
+      --parchment: #e1f5fe;
+      --cream:     #f2ead8;
+      --gold:      #b8860b;
+      --gold-lt:   #d4a843;
+      --red:       #8b1a1a;
+      --border:    #c9b99a;
+      --shadow:    rgba(90,60,20,0.15);
+      --pad-bg:    #fff;
+      --pad-border:#c9b99a;
+    }
+
+    /* ─── RESET & BASE ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--parchment);
+      color: var(--ink);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 0% 0%, rgba(184,134,11,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse at 100% 100%, rgba(139,26,26,0.05) 0%, transparent 55%);
+    }
+
+    /* ─── HEADER ───────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1a0e04 0%, #2d1a08 60%, #1a1209 100%);
+      color: #f5ead0;
+      text-align: center;
+      padding: 2.5rem 1.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        -45deg,
+        transparent, transparent 20px,
+        rgba(184,134,11,0.03) 20px, rgba(184,134,11,0.03) 21px
+      );
+    }
+    header .emblem {
+      width: 60px; height: 60px;
+      border: 2px solid var(--gold-lt);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+      position: relative;
+    }
+    header .emblem svg { width: 34px; height: 34px; }
+    header h1 {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(1.6rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+    }
+    header .sub {
+      font-size: 0.82rem;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      margin-top: 0.5rem;
+    }
+    header .ornament {
+      color: var(--gold);
+      font-size: 1.1rem;
+      margin-top: 0.8rem;
+      letter-spacing: 0.4em;
+    }
+
+    /* ─── MAIN LAYOUT ──────────────────────────────────────── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    /* ─── MEMORANDUM CARD ──────────────────────────────────── */
+    .memo-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: clamp(1.5rem, 5vw, 2.8rem);
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 28px var(--shadow);
+      position: relative;
+    }
+    .memo-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold) 0%, var(--gold-lt) 50%, var(--gold) 100%);
+    }
+
+    .memo-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border-bottom: 1px solid var(--cream);
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .memo-title {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(1.1rem, 3vw, 1.5rem);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.4rem;
+      color: var(--ink);
+    }
+    .memo-subtitle {
+      text-align: center;
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--gold);
+      font-size: 0.95rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .memo-body {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: #2c2010;
+    }
+    .memo-body p { margin-bottom: 1rem; }
+    .memo-body p:last-child { margin-bottom: 0; }
+
+    .demands {
+      margin: 1.2rem 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    .demands li {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.45rem 0;
+      border-bottom: 1px dashed var(--cream);
+      font-family: 'EB Garamond', serif;
+      font-size: 1.03rem;
+      line-height: 1.6;
+    }
+    .demands li:last-child { border-bottom: none; }
+    .demands li .num {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      background: var(--gold);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.72rem;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+
+    /* ─── SIGNATURE FORM CARD ──────────────────────────────── */
+    .form-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: clamp(1.5rem, 5vw, 2.5rem);
+      box-shadow: 0 4px 28px var(--shadow);
+      position: relative;
+    }
+    .form-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--red) 0%, #c0392b 50%, var(--red) 100%);
+    }
+
+    .section-heading {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 1.4rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--cream);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .section-heading svg { color: var(--red); flex-shrink: 0; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem;
+      margin-bottom: 1.1rem;
+    }
+    @media (max-width: 560px) { .form-row { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .field label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .field input, .field textarea {
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      padding: 0.65rem 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      color: var(--ink);
+      background: var(--parchment);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      width: 100%;
+    }
+    .field input:focus, .field textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(184,134,11,0.12);
+      background: #fff;
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+
+    /* ─── SIGNATURE PAD ────────────────────────────────────── */
+    .sig-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+    .sig-wrapper {
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      background: var(--pad-bg);
+      position: relative;
+      overflow: hidden;
+    }
+    .sig-wrapper .sig-hint {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: #c9b99a;
+      font-size: 1rem;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    canvas#sigPad {
+      display: block;
+      width: 100%;
+      height: 160px;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .sig-baseline {
+      position: absolute;
+      bottom: 38px; left: 20px; right: 20px;
+      border-bottom: 1px solid #e0d5c0;
+      pointer-events: none;
+    }
+    .sig-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0.75rem;
+      background: var(--cream);
+      border-top: 1px solid var(--border);
+    }
+    .sig-controls span {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #8a7050;
+    }
+    .btn-clear {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 0.28rem 0.75rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--red);
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-clear:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* ─── SUBMIT BUTTON ────────────────────────────────────── */
+    .consent-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin: 1.2rem 0;
+      font-size: 0.87rem;
+      color: #5a4020;
+      line-height: 1.5;
+    }
+    .consent-row input[type="checkbox"] {
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      accent-color: var(--gold);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.9rem 1.5rem;
+      background: linear-gradient(135deg, #8b1a1a 0%, #c0392b 100%);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-submit::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+    }
+    .btn-submit:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .btn-submit:active:not(:disabled) { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #formError {
+      margin-top: 0.75rem;
+      padding: 0.65rem 0.9rem;
+      background: #fff0f0;
+      border: 1px solid #f5c0c0;
+      border-radius: 2px;
+      color: var(--red);
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    /* ─── SUCCESS / PREVIEW SECTION ────────────────────────── */
+    #successSection {
+      display: none;
+    }
+    .success-banner {
+      background: linear-gradient(135deg, #1a3a1a 0%, #2d5a2d 100%);
+      color: #e8f5e8;
+      border-radius: 2px;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .success-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        45deg, transparent, transparent 15px,
+        rgba(255,255,255,0.02) 15px, rgba(255,255,255,0.02) 16px
+      );
+    }
+    .success-banner .check {
+      width: 52px; height: 52px;
+      border: 2px solid #7dba7d;
+      border-radius: 50%;
+      margin: 0 auto 0.8rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .success-banner h2 {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+    .success-banner p { font-size: 0.92rem; opacity: 0.85; }
+
+    /* PDF preview container */
+    #pdfPreview {
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: clamp(1.5rem, 5vw, 2.8rem);
+      box-shadow: 0 4px 28px var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+    #pdfPreview .pdf-header {
+      text-align: center;
+      padding-bottom: 1.2rem;
+      border-bottom: 2px solid var(--gold);
+      margin-bottom: 1.4rem;
+    }
+    #pdfPreview .pdf-header .org-name {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    #pdfPreview .pdf-header .org-sub {
+      font-size: 0.8rem;
+      color: var(--gold);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    #pdfPreview .pdf-memo-title {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: underline;
+      margin-bottom: 1rem;
+    }
+    #pdfPreview .pdf-body {
+      font-family: 'EB Garamond', serif;
+      font-size: 1rem;
+      line-height: 1.85;
+      color: #2c2010;
+    }
+    #pdfPreview .pdf-body p { margin-bottom: 0.9rem; }
+    #pdfPreview .pdf-sig-block {
+      margin-top: 2rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.2rem;
+    }
+    #pdfPreview .pdf-sig-block table { width: 100%; border-collapse: collapse; }
+    #pdfPreview .pdf-sig-block td {
+      padding: 0.4rem 0.8rem;
+      font-family: 'EB Garamond', serif;
+      font-size: 1rem;
+      vertical-align: top;
+    }
+    #pdfPreview .pdf-sig-block td:first-child {
+      width: 38%;
+      font-weight: 600;
+      color: var(--gold);
+    }
+    #pdfPreview .sig-img-preview {
+      max-height: 70px;
+      max-width: 240px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .btn-download {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-lt) 100%);
+      color: #1a0e04;
+      border: none;
+      border-radius: 2px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-download:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-sign-another {
+      display: block;
+      text-align: center;
+      margin-top: 0.9rem;
+      font-size: 0.85rem;
+      color: var(--gold);
+      cursor: pointer;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ─── COUNTER BADGE ────────────────────────────────────── */
+    .counter-strip {
+      background: linear-gradient(135deg, #2d1a08 0%, #1a0e04 100%);
+      color: var(--gold-lt);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.88rem;
+      letter-spacing: 0.06em;
+    }
+    .counter-strip strong {
+      font-size: 1.15rem;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* ─── FOOTER ───────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.78rem;
+      color: #8a7050;
+      border-top: 1px solid var(--cream);
+    }
+
+    /* ─── UTILITY ──────────────────────────────────────────── */
+    .mt-1 { margin-top: 1rem; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ═══════════════════════════════════════════════ -->
+<header>
+  <div class="emblem">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#d4a843" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+    </svg>
+  </div>
+  <h1>Mass Memorandum & Petition</h1>
+  <p class="sub">Submitted To: The Honourable Authorities Concerned</p>
+  <p class="ornament">❦ ✦ ❦</p>
+</header>
+
+<!-- ══ SIGNATURE COUNTER ════════════════════════════════════ -->
+<div class="counter-strip" id="counterStrip" style="display:none;">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  <span><strong id="sigCount">0</strong> citizens have signed</span>
+</div>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════ -->
+<main>
+
+  <!-- SUBMISSION FORM SECTION -->
+  <div id="formSection">
+
+    <!-- Memorandum Text -->
+    <div class="memo-card">
+      <p class="memo-label">📜 Official Memorandum</p>
+      <p class="memo-title">MEMORANDUM OF DEMANDS</p>
+      <p class="memo-subtitle">Presented by the Citizens' Collective to the Competent Authority</p>
+
+      <div class="memo-body">
+        <p>
+          We, the undersigned citizens and residents, hereby submit this memorandum to draw the urgent attention
+          of the concerned authorities towards the pressing issues affecting our community. We respectfully
+          urge the immediate and decisive action on the following demands:
+        </p>
+
+        <ul class="demands">
+          <li>
+            <span class="num">1</span>
+            <span>Immediate repair and maintenance of all public roads and infrastructure within the municipality, with a timeline of 90 days and regular progress updates.</span>
+          </li>
+          <li>
+            <span class="num">2</span>
+            <span>Establishment of a reliable and uninterrupted 24×7 drinking water supply system, ensuring quality testing and distribution to all wards equally.</span>
+          </li>
+          <li>
+            <span class="num">3</span>
+            <span>Installation of adequate street lighting in all residential areas and public spaces to enhance safety and security for citizens.</span>
+          </li>
+          <li>
+            <span class="num">4</span>
+            <span>Setting up a functioning and well-equipped primary health centre in underserved localities, staffed with qualified medical professionals.</span>
+          </li>
+          <li>
+            <span class="num">5</span>
+            <span>Proper solid waste management, including regular door-to-door collection, scientific disposal, and implementation of the wet/dry waste segregation norms.</span>
+          </li>
+        </ul>
+
+        <p>
+          We, the signatories below, hereby affirm that all information provided is true and correct to
+          the best of our knowledge. We trust that the authorities will consider these demands with the
+          seriousness they deserve and take prompt remedial action in the public interest.
+        </p>
+      </div>
+    </div>
+
+    <!-- Signature Form -->
+    <div class="form-card">
+      <h2 class="section-heading">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Add Your Signature
+      </h2>
+
+      <form id="petitionForm" novalidate>
+        <div class="form-row">
+          <div class="field">
+            <label for="fullName">Full Name *</label>
+            <input type="text" id="fullName" placeholder="e.g. Rajan Krishnan" required autocomplete="name"/>
+          </div>
+          <div class="field">
+            <label for="address">Address / Designation *</label>
+            <input type="text" id="address" placeholder="e.g. Ward 12, Chalakudy" required/>
+          </div>
+        </div>
+
+        <!-- Signature Pad -->
+        <div class="field mt-1">
+          <span class="sig-label">Signature *</span>
+          <div class="sig-wrapper" id="sigWrapper">
+            <span class="sig-hint" id="sigHint">Sign here with your finger or mouse</span>
+            <canvas id="sigPad"></canvas>
+            <div class="sig-baseline"></div>
+            <div class="sig-controls">
+              <span>Draw your signature above</span>
+              <button type="button" class="btn-clear" id="clearBtn">✕ Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consent -->
+        <label class="consent-row">
+          <input type="checkbox" id="consent" required/>
+          <span>I voluntarily sign this petition and confirm the above information is accurate. I consent to my signature being included in the submitted memorandum.</span>
+        </label>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-submit" id="submitBtn">
+          Sign & Submit Memorandum
+        </button>
+        <div id="formError">⚠ Please fill in all fields, draw your signature, and accept the consent.</div>
+      </form>
+    </div>
+
+  </div><!-- /#formSection -->
+
+  <!-- ─── SUCCESS SECTION ──────────────────────────────────── -->
+  <div id="successSection">
+    <div class="success-banner">
+      <div class="check">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7dba7d" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2>Thank You for Signing!</h2>
+      <p>Your signature has been recorded. Download your personal copy below.</p>
+    </div>
+
+    <!-- PDF Preview (what will be rendered as PDF) -->
+    <div id="pdfPreview">
+      <div class="pdf-header">
+        <div class="org-name">MEMORANDUM OF DEMANDS</div>
+        <div class="org-sub">Citizens' Petition — Official Copy</div>
+      </div>
+
+      <div class="pdf-memo-title">TO WHOM IT MAY CONCERN</div>
+
+      <div class="pdf-body">
+        <p>
+          We, the undersigned citizens and residents, hereby submit this memorandum to draw the urgent attention
+          of the concerned authorities towards the pressing issues affecting our community. We respectfully
+          urge the immediate and decisive action on the following demands:
+        </p>
+        <p><strong>1.</strong> Immediate repair and maintenance of all public roads and infrastructure within the municipality, with a timeline of 90 days and regular progress updates.</p>
+        <p><strong>2.</strong> Establishment of a reliable and uninterrupted 24×7 drinking water supply system, ensuring quality testing and distribution to all wards equally.</p>
+        <p><strong>3.</strong> Installation of adequate street lighting in all residential areas and public spaces to enhance safety and security for citizens.</p>
+        <p><strong>4.</strong> Setting up a functioning and well-equipped primary health centre in underserved localities, staffed with qualified medical professionals.</p>
+        <p><strong>5.</strong> Proper solid waste management, including regular door-to-door collection, scientific disposal, and implementation of the wet/dry waste segregation norms.</p>
+        <p>
+          We, the signatories below, hereby affirm that all information provided is true and correct to
+          the best of our knowledge. We trust the authorities will take prompt remedial action in the public interest.
+        </p>
+      </div>
+
+      <!-- Signature block filled by JS -->
+      <div class="pdf-sig-block">
+        <table>
+          <tr><td>Full Name:</td><td id="pdfName">—</td></tr>
+          <tr><td>Address / Designation:</td><td id="pdfAddress">—</td></tr>
+          <tr><td>Date:</td><td id="pdfDate">—</td></tr>
+          <tr>
+            <td>Signature:</td>
+            <td><img id="pdfSig" class="sig-img-preview" src="" alt="Signature"/></td>
+          </tr>
+        </table>
+      </div>
+    </div><!-- /#pdfPreview -->
+
+    <button class="btn-download" id="downloadBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download My Signed Copy (PDF)
+    </button>
+    <button class="btn-sign-another" id="signAnotherBtn">← Return to form (sign on behalf of another)</button>
+  </div><!-- /#successSection -->
+
+</main>
+
+<footer>
+  This is an official petition document. All signatures are digitally recorded. &copy; 2025 Citizens' Collective.
+</footer>
+
+<!-- ══ JAVASCRIPT ═════════════════════════════════════════════ -->
+<script>
+/* ════════════════════════════════════════════════════════════
+   CONFIGURATION — Paste your deployed Apps Script URL here
+   ════════════════════════════════════════════════════════════ */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbjykl5xGca0L4duoM_BsMfON_qpXIWQ_q1qV-w-XwHuRwlyDDm0YZ1A7vTrw6n-nA/exec';
+
+/* ════════════════════════════════════════════════════════════
+   SIGNATURE PAD
+   ════════════════════════════════════════════════════════════ */
+(function initSignaturePad() {
+  const canvas  = document.getElementById('sigPad');
+  const ctx     = canvas.getContext('2d');
+  const hint    = document.getElementById('sigHint');
+  let drawing   = false;
+  let hasMark   = false;
+
+  function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr  = window.devicePixelRatio || 1;
+    canvas.width  = rect.width  * dpr;
+    canvas.height = 160         * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth   = 2.2;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.strokeStyle = '#1a1209';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function getPos(e) {
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    drawing = true;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    if (!hasMark) { hint.style.opacity = '0'; hasMark = true; }
+  }
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function stopDraw(e) { drawing = false; }
+
+  canvas.addEventListener('mousedown',  startDraw);
+  canvas.addEventListener('mousemove',  draw);
+  canvas.addEventListener('mouseup',    stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove',  draw,      { passive: false });
+  canvas.addEventListener('touchend',   stopDraw);
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hint.style.opacity = '1';
+    hasMark = false;
+  });
+
+  window.getSignatureData = () => hasMark ? canvas.toDataURL('image/png') : null;
+  window.hasSignature     = () => hasMark;
+})();
+
+/* ════════════════════════════════════════════════════════════
+   FETCH SIGNATURE COUNT
+   ════════════════════════════════════════════════════════════ */
+async function loadCount() {
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE') return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL);
+    const data = await res.json();
+    const count = Array.isArray(data) ? data.length : 0;
+    if (count > 0) {
+      document.getElementById('sigCount').textContent = count;
+      document.getElementById('counterStrip').style.display = 'flex';
+    }
+  } catch (_) {}
+}
+loadCount();
+
+/* ════════════════════════════════════════════════════════════
+   FORM SUBMISSION
+   ════════════════════════════════════════════════════════════ */
+document.getElementById('petitionForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const name    = document.getElementById('fullName').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const consent = document.getElementById('consent').checked;
+  const sigData = window.getSignatureData();
+  const errBox  = document.getElementById('formError');
+
+  // Validate
+  if (!name || !address || !consent || !sigData) {
+    errBox.style.display = 'block';
+    errBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  errBox.style.display = 'none';
+
+  // Disable button & show spinner
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Submitting…';
+
+  const payload = {
+    name:      name,
+    address:   address,
+    signature: sigData,
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    if (APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE') {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode:   'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body:   JSON.stringify(payload)
+      });
+    }
+
+    // Populate preview
+    document.getElementById('pdfName').textContent    = name;
+    document.getElementById('pdfAddress').textContent = address;
+    document.getElementById('pdfDate').textContent    = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' });
+    document.getElementById('pdfSig').src             = sigData;
+
+    // Swap sections
+    document.getElementById('formSection').style.display   = 'none';
+    document.getElementById('successSection').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Store for PDF
+    window._pdfName    = name;
+    window._pdfAddress = address;
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = 'Sign & Submit Memorandum';
+    errBox.textContent = '⚠ Submission failed. Please check your connection and try again.';
+    errBox.style.display = 'block';
+  }
+});
+
+/* ════════════════════════════════════════════════════════════
+   PDF DOWNLOAD
+   ════════════════════════════════════════════════════════════ */
+document.getElementById('downloadBtn').addEventListener('click', function() {
+  const btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generating PDF…';
+
+  const element = document.getElementById('pdfPreview');
+  const opt = {
+    margin:      [12, 14, 12, 14],
+    filename:    `Memorandum_${window._pdfName || 'Signed'}.pdf`,
+    image:       { type: 'jpeg', quality: 0.96 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save().then(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download My Signed Copy (PDF)';
+  });
+});
+
+/* ════════════════════════════════════════════════════════════
+   SIGN ANOTHER
+   ════════════════════════════════════════════════════════════ */
+document.getElementById('signAnotherBtn').addEventListener('click', function() {
+  document.getElementById('petitionForm').reset();
+  document.getElementById('successSection').style.display = 'none';
+  document.getElementById('formSection').style.display    = 'block';
+  // Clear signature pad
+  document.getElementById('clearBtn').click();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  loadCount();
+});
+</script>
+</body>
+</html>
