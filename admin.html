@@ -451,25 +451,9 @@
 
     <div class="doc-title">TO WHOM IT MAY CONCERN</div>
 
-    <div class="doc-body">
-      <p>
-        We, the undersigned citizens and residents, hereby submit this memorandum to draw the urgent attention
-        of the concerned authorities towards the pressing issues affecting our community. We respectfully
-        urge the immediate and decisive action on the following demands:
-      </p>
-      <ol class="demand-list">
-        <li>Immediate repair and maintenance of all public roads and infrastructure within the municipality, with a timeline of 90 days and regular progress updates.</li>
-        <li>Establishment of a reliable and uninterrupted 24×7 drinking water supply system, ensuring quality testing and distribution to all wards equally.</li>
-        <li>Installation of adequate street lighting in all residential areas and public spaces to enhance safety and security for citizens.</li>
-        <li>Setting up a functioning and well-equipped primary health centre in underserved localities, staffed with qualified medical professionals.</li>
-        <li>Proper solid waste management, including regular door-to-door collection, scientific disposal, and implementation of wet/dry waste segregation norms.</li>
-      </ol>
-      <p>
-        We, the signatories listed below, hereby affirm that all information provided is true and correct
-        to the best of our knowledge. We trust that the authorities will consider these demands with the
-        seriousness they deserve and take prompt remedial action in the public interest.
-      </p>
-    </div>
+<div class="doc-body" id="memoBodyAdmin">
+  <!-- Loaded dynamically from memmo.txt -->
+</div>
   </div>
 
   <!-- SIGNATURES SECTION HEADER -->
@@ -508,7 +492,43 @@
    CONFIGURATION — Paste your deployed Apps Script URL here
    ════════════════════════════════════════════════════════════ */
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbjykl5xGca0L4duoM_BsMfON_qpXIWQ_q1qV-w-XwHuRwlyDDm0YZ1A7vTrw6n-nA/exec';
+/* ════════════════════════════════════════════════════════════
+   MEMORANDUM DYNAMIC LOADER
+   ════════════════════════════════════════════════════════════ */
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/sumteck/akk/main/memmo.txt';
+// Example: 'https://raw.githubusercontent.com/youruser/yourrepo/main/memmo.txt'
 
+async function loadMemorandum() {
+  try {
+    const res  = await fetch(GITHUB_RAW_URL, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+
+    // Parse: first non-empty line = title, rest = body paragraphs
+    const lines  = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const title  = lines[0] || '';
+    const body   = lines.slice(1);
+
+    const bodyHTML = body.map(line => `<p>${line}</p>`).join('\n');
+
+    // Inject into all target containers (only injects if the element exists on this page)
+    const targets = ['memoBodyForm', 'memoBodyPdf', 'memoBodyAdmin'];
+    targets.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = bodyHTML;
+    });
+
+    // Optionally update visible title elements if you want the title dynamic too
+    document.querySelectorAll('.memo-title, .pdf-memo-title, .doc-title').forEach(el => {
+      el.textContent = title;
+    });
+
+  } catch (err) {
+    console.error('Failed to load memorandum:', err);
+  }
+}
+
+loadMemorandum();
 /* ─── Set print date ────────────────────────────────────── */
 document.getElementById('printDate').textContent =
   new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' });
