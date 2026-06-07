@@ -909,8 +909,16 @@ document.getElementById('downloadBtn').addEventListener('click', function() {
     margin:      [12, 14, 12, 14],
     filename:    `Memorandum_${window._pdfName || 'Signed'}.pdf`,
     image:       { type: 'jpeg', quality: 0.96 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    html2canvas: {
+      scale:           2,
+      useCORS:         true,
+      letterRendering: true,
+      scrollY:         0,
+      scrollX:         0,
+      windowWidth:     document.documentElement.offsetWidth,
+      backgroundColor: '#ffffff'
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
   html2pdf().set(opt).from(element).save().then(() => {
