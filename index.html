@@ -730,17 +730,46 @@ loadMemorandum();
   let drawing   = false;
   let hasMark   = false;
 
+  // Cache the last known width so vertical-only resize events (mobile address bar
+  // hiding/showing) do NOT clear the canvas.
+  let lastWidth = null;
+
   function resizeCanvas() {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    const dpr  = window.devicePixelRatio || 1;
-    canvas.width  = rect.width  * dpr;
-    canvas.height = 160         * dpr;
+    const rect     = canvas.parentElement.getBoundingClientRect();
+    const newWidth = Math.round(rect.width);   // compare integer px values
+
+    // ── Guard: skip if only the height changed (mobile browser chrome toggling) ──
+    if (lastWidth !== null && newWidth === lastWidth) return;
+    lastWidth = newWidth;
+
+    // ── Fallback: save the current signature before wiping the canvas ──
+    let savedImage = null;
+    if (hasMark) {
+      savedImage = canvas.toDataURL('image/png');
+    }
+
+    const dpr       = window.devicePixelRatio || 1;
+    canvas.width    = newWidth * dpr;
+    canvas.height   = 160     * dpr;
     ctx.scale(dpr, dpr);
+
+    // Restore drawing context styles (reset on every canvas resize)
     ctx.lineWidth   = 2.2;
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
     ctx.strokeStyle = '#1a1209';
+
+    // ── Restore the signature into the freshly-sized canvas ──
+    if (savedImage) {
+      const img = new Image();
+      img.onload = () => {
+        // Scale the saved bitmap to fill the new logical canvas dimensions
+        ctx.drawImage(img, 0, 0, newWidth, 160);
+      };
+      img.src = savedImage;
+    }
   }
+
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
