@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Editor Pro</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f7;
+    --bg-tertiary: #ebebed;
+    --bg-dark: #1c1c1e;
+    --bg-canvas: #16213e;
+    --text-primary: #1c1c1e;
+    --text-secondary: #6e6e73;
+    --text-tertiary: #aeaeb2;
+    --border: rgba(0,0,0,0.1);
+    --border-hover: rgba(0,0,0,0.2);
+    --accent: #0071e3;
+    --accent-light: #e8f0fc;
+    --accent-text: #0058b0;
+    --danger: #ff3b30;
+    --success: #34c759;
+    --warning: #ff9f0a;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.18);
+    --sidebar-w: 240px;
+    --toolbar-h: 54px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1c1c1e;
+      --bg-secondary: #2c2c2e;
+      --bg-tertiary: #3a3a3c;
+      --bg-dark: #000000;
+      --bg-canvas: #0a0a14;
+      --text-primary: #f5f5f7;
+      --text-secondary: #aeaeb2;
+      --text-tertiary: #6e6e73;
+      --border: rgba(255,255,255,0.1);
+      --border-hover: rgba(255,255,255,0.2);
+      --accent-light: #1a2a40;
+      --accent-text: #4da3ff;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── TOP HEADER ─── */
+  .header {
+    height: 46px;
+    background: var(--bg-primary);
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .header-logo i { font-size: 20px; color: var(--accent); }
+  .header-spacer { flex: 1; }
+  .header-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .header-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .header-btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .header-btn.primary:hover { opacity: 0.88; }
+  .header-btn i { font-size: 15px; }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ─── LEFT SIDEBAR ─── */
+  .sidebar-left {
+    width: var(--sidebar-w);
+    background: var(--bg-primary);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  .stab {
+    flex: 1;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .stab i { display: block; font-size: 16px; margin-bottom: 2px; }
+  .stab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .stab:hover:not(.active) { color: var(--text-secondary); background: var(--bg-secondary); }
+  .tab-panel { display: none; flex: 1; overflow-y: auto; padding: 12px; }
+  .tab-panel.active { display: block; }
+
+  /* ─── SECTION TITLES ─── */
+  .sec { font-size: 10px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; margin: 14px 0 8px; }
+  .sec:first-child { margin-top: 0; }
+
+  /* ─── UPLOAD ─── */
+  .upload-zone {
+    border: 1.5px dashed var(--border-hover);
+    border-radius: var(--radius-lg);
+    padding: 24px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 14px;
+    background: var(--bg-secondary);
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-light); }
+  .upload-zone i { font-size: 28px; color: var(--text-tertiary); margin-bottom: 6px; display: block; }
+  .upload-zone .uz-title { font-size: 12px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; }
+  .upload-zone .uz-sub { font-size: 11px; color: var(--text-tertiary); }
+  #fileInput { display: none; }
+
+  /* ─── FILTERS ─── */
+  .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .filter-btn {
+    padding: 7px 6px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .filter-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .filter-btn.active { background: var(--accent-light); color: var(--accent-text); border-color: var(--accent); }
+
+  /* ─── SLIDERS ─── */
+  .slider-row { margin-bottom: 11px; }
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+  }
+  .slider-label span { font-weight: 600; color: var(--text-primary); font-size: 11px; }
+  input[type=range] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  /* ─── TOOLBAR ─── */
+  .toolbar {
+    height: var(--toolbar-h);
+    background: var(--bg-primary);
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tool-btn i { font-size: 16px; }
+  .tool-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .tool-btn.active { background: var(--accent-light); color: var(--accent-text); border-color: var(--accent); }
+  .tool-btn.danger { color: var(--danger); border-color: rgba(255,59,48,0.3); }
+  .tool-btn.danger:hover { background: rgba(255,59,48,0.08); }
+  .tool-sep { width: 0.5px; height: 26px; background: var(--border); margin: 0 4px; }
+  .tool-spacer { flex: 1; }
+  .tool-info { font-size: 11px; color: var(--text-tertiary); padding: 0 8px; }
+
+  /* ─── CANVAS AREA ─── */
+  .center-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .canvas-area {
+    flex: 1;
+    background: var(--bg-canvas);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 24px;
+    position: relative;
+  }
+  .checker-bg {
+    background-image: linear-gradient(45deg,#2a2a2a 25%,transparent 25%),
+      linear-gradient(-45deg,#2a2a2a 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#2a2a2a 75%),
+      linear-gradient(-45deg,transparent 75%,#2a2a2a 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  }
+  .canvas-wrap {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.08);
+  }
+  #mainCanvas { display: block; cursor: crosshair; }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: rgba(255,255,255,0.25);
+    text-align: center;
+    padding: 48px;
+    border: 1.5px dashed rgba(255,255,255,0.12);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 320px;
+    min-height: 220px;
+  }
+  .empty-state:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.4); }
+  .empty-state i { font-size: 52px; }
+  .empty-state p { font-size: 14px; font-weight: 500; }
+  .empty-state small { font-size: 12px; opacity: 0.7; }
+
+  /* ─── RIGHT SIDEBAR ─── */
+  .sidebar-right {
+    width: 230px;
+    background: var(--bg-primary);
+    border-left: 0.5px solid var(--border);
+    overflow-y: auto;
+    padding: 12px;
+    flex-shrink: 0;
+  }
+
+  /* ─── INPUTS ─── */
+  input[type=text], input[type=number], select, textarea {
+    width: 100%;
+    padding: 7px 10px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus { border-color: var(--accent); }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    width: 100%;
+    padding: 9px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+    margin-bottom: 7px;
+    border: none;
+  }
+  .btn i { font-size: 15px; }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:hover { opacity: 0.87; }
+  .btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 0.5px solid var(--border);
+  }
+  .btn-outline:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .btn-danger-outline {
+    background: transparent;
+    color: var(--danger);
+    border: 0.5px solid rgba(255,59,48,0.3);
+  }
+  .btn-danger-outline:hover { background: rgba(255,59,48,0.07); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { opacity: 0.87; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ─── COLOR SWATCHES ─── */
+  .color-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .swatch {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.12s;
+    flex-shrink: 0;
+  }
+  .swatch:hover { transform: scale(1.18); }
+  .swatch.active { border-color: var(--text-primary); transform: scale(1.18); }
+
+  /* ─── LOCATION ─── */
+  .loc-item {
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-bottom: 0.5px solid var(--border);
+    transition: background 0.12s;
+  }
+  .loc-item:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .loc-item small { font-size: 10px; color: var(--text-tertiary); display: block; margin-top: 2px; }
+  .loc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+  .loc-badge i { font-size: 16px; color: var(--danger); }
+  .loc-badge-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .loc-badge-coords { font-size: 10px; color: var(--text-tertiary); }
+
+  /* ─── BG REMOVER ─── */
+  .bg-remover-panel { }
+  .bg-status {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    text-align: center;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .bg-status i { font-size: 14px; }
+  .status-processing { color: var(--warning); }
+  .status-done { color: var(--success); }
+  .status-error { color: var(--danger); }
+
+  .bg-color-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+  .bg-color-swatch {
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    transition: transform 0.12s;
+  }
+  .bg-color-swatch:hover { transform: scale(1.12); border-color: var(--border-hover); }
+  .bg-color-swatch.active { border-color: var(--accent); transform: scale(1.12); }
+  .checker-swatch {
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background-image: linear-gradient(45deg,#ccc 25%,transparent 25%),
+      linear-gradient(-45deg,#ccc 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#ccc 75%),
+      linear-gradient(-45deg,transparent 75%,#ccc 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+    background-color: #fff;
+    transition: transform 0.12s;
+  }
+  .checker-swatch:hover, .checker-swatch.active { transform: scale(1.12); border-color: var(--accent); }
+
+  /* ─── PROGRESS ─── */
+  .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    display: none;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-bar.active { display: block; }
+
+  /* ─── API KEY INPUT ─── */
+  .api-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .api-row input { margin-bottom: 0; flex: 1; }
+  .api-toggle {
+    padding: 0 8px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+  }
+  .api-toggle:hover { color: var(--text-primary); }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    padding: 10px 20px;
+    border-radius: var(--radius-xl);
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 9999;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <i class="ti ti-camera-plus" aria-hidden="true"></i>
+    Photo Editor Pro
+  </div>
+  <div class="header-spacer"></div>
+  <button class="header-btn" onclick="document.getElementById('fileInput').click()">
+    <i class="ti ti-upload" aria-hidden="true"></i> Open
+  </button>
+  <button class="header-btn" onclick="resetAll()">
+    <i class="ti ti-refresh" aria-hidden="true"></i> Reset
+  </button>
+  <button class="header-btn primary" onclick="exportImage()">
+    <i class="ti ti-download" aria-hidden="true"></i> Export
+  </button>
+</div>
+<input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg,image/webp">
+
+<div class="main">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar-left">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="switchTab('upload',this)" title="Upload">
+        <i class="ti ti-photo-up" aria-hidden="true"></i>File
+      </div>
+      <div class="stab" onclick="switchTab('filters',this)" title="Filters">
+        <i class="ti ti-wand" aria-hidden="true"></i>Filters
+      </div>
+      <div class="stab" onclick="switchTab('adjust',this)" title="Adjust">
+        <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>Adjust
+      </div>
+      <div class="stab" onclick="switchTab('bg',this)" title="Background">
+        <i class="ti ti-layers-subtract" aria-hidden="true"></i>BG
+      </div>
+    </div>
+
+    <!-- UPLOAD TAB -->
+    <div class="tab-panel active" id="tab-upload">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <i class="ti ti-cloud-upload" aria-hidden="true"></i>
+        <div class="uz-title">ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യൂ</div>
+        <div class="uz-sub">PNG, JPEG — Click or Drag & Drop</div>
+      </div>
+      <button class="btn btn-accent" onclick="openCamera()" style="margin-bottom:14px">
+        <i class="ti ti-camera" aria-hidden="true"></i> ക്യാമറ ഉപയോഗിച്ച് ഫോട്ടോ എടുക്കൂ
+      </button>
+      <div class="sec">Image Info</div>
+      <div id="imgInfoBox" style="font-size:11px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:var(--radius-sm);padding:10px;line-height:1.8">
+        Image ഇതുവരെ load ആയിട്ടില്ല
+      </div>
+      <div class="sec" style="margin-top:14px">Transform</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <button class="btn btn-outline" onclick="rotateLeft()"><i class="ti ti-rotate-counterclockwise" aria-hidden="true"></i> Left</button>
+        <button class="btn btn-outline" onclick="rotateRight()"><i class="ti ti-rotate-clockwise" aria-hidden="true"></i> Right</button>
+        <button class="btn btn-outline" onclick="flipH()"><i class="ti ti-flip-horizontal" aria-hidden="true"></i> Flip H</button>
+        <button class="btn btn-outline" onclick="flipV()"><i class="ti ti-flip-vertical" aria-hidden="true"></i> Flip V</button>
+      </div>
+      <div style="margin-top:8px">
+        <button class="btn btn-danger-outline" onclick="resetAll()"><i class="ti ti-refresh" aria-hidden="true"></i> Reset All</button>
+      </div>
+    </div>
+
+    <!-- FILTERS TAB -->
+    <div class="tab-panel" id="tab-filters">
+      <div class="sec">Preset Filters</div>
+      <div class="filter-grid">
+        <button class="filter-btn active" onclick="applyFilter('none',this)">Original</button>
+        <button class="filter-btn" onclick="applyFilter('vivid',this)">Vivid</button>
+        <button class="filter-btn" onclick="applyFilter('bw',this)">B &amp; W</button>
+        <button class="filter-btn" onclick="applyFilter('sepia',this)">Sepia</button>
+        <button class="filter-btn" onclick="applyFilter('cool',this)">Cool</button>
+        <button class="filter-btn" onclick="applyFilter('warm',this)">Warm</button>
+        <button class="filter-btn" onclick="applyFilter('fade',this)">Fade</button>
+        <button class="filter-btn" onclick="applyFilter('drama',this)">Drama</button>
+        <button class="filter-btn" onclick="applyFilter('chrome',this)">Chrome</button>
+        <button class="filter-btn" onclick="applyFilter('lomo',this)">Lomo</button>
+        <button class="filter-btn" onclick="applyFilter('vintage',this)">Vintage</button>
+        <button class="filter-btn" onclick="applyFilter('noir',this)">Noir</button>
+      </div>
+    </div>
+
+    <!-- ADJUST TAB -->
+    <div class="tab-panel" id="tab-adjust">
+      <div class="sec">Light</div>
+      <div class="slider-row">
+        <div class="slider-label">Brightness <span id="bVal">0</span></div>
+        <input type="range" min="-100" max="100" value="0" id="brightness" oninput="updateAdj()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Contrast <span id="cVal">0</span></div>
+        <input type="range" min="-100" max="100" value="0" id="contrast" oninput="updateAdj()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Exposure <span id="exVal">0</span></div>
+        <input type="range" min="-100" max="100" value="0" id="exposure" oninput="updateAdj()">
+      </div>
+      <div class="sec">Color</div>
+      <div class="slider-row">
+        <div class="slider-label">Saturation <span id="sVal">0</span></div>
+        <input type="range" min="-100" max="100" value="0" id="saturation" oninput="updateAdj()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Hue Shift <span id="hVal">0</span></div>
+        <input type="range" min="-180" max="180" value="0" id="hue" oninput="updateAdj()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Temperature <span id="tVal">0</span></div>
+        <input type="range" min="-100" max="100" value="0" id="temperature" oninput="updateAdj()">
+      </div>
+      <div class="sec">Detail</div>
+      <div class="slider-row">
+        <div class="slider-label">Sharpness <span id="shVal">0</span></div>
+        <input type="range" min="0" max="100" value="0" id="sharpen" oninput="updateAdj()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Blur <span id="blVal">0</span></div>
+        <input type="range" min="0" max="20" value="0" id="blur" oninput="updateAdj()">
+      </div>
+      <div class="sec">Effects</div>
+      <div class="slider-row">
+        <div class="slider-label">Vignette <span id="vgVal">0</span></div>
+        <input type="range" min="0" max="100" value="0" id="vignette" oninput="updateAdj()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Noise <span id="noVal">0</span></div>
+        <input type="range" min="0" max="100" value="0" id="noise" oninput="updateAdj()">
+      </div>
+    </div>
+
+    <!-- BG REMOVER TAB -->
+    <div class="tab-panel" id="tab-bg">
+      <div class="bg-remover-panel">
+        <div class="sec">Background Remover</div>
+
+        <!-- METHOD TOGGLE -->
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="btn btn-accent" id="methodAI" onclick="setBGMethod('ai',this)" style="flex:1;margin-bottom:0;font-size:11px">
+            <i class="ti ti-robot" aria-hidden="true"></i> AI (remove.bg)
+          </button>
+          <button class="btn btn-outline" id="methodLocal" onclick="setBGMethod('local',this)" style="flex:1;margin-bottom:0;font-size:11px">
+            <i class="ti ti-wand" aria-hidden="true"></i> Smart Local
+          </button>
+        </div>
+
+        <!-- AI PANEL -->
+        <div id="aiPanel">
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.6">
+            remove.bg API ഉപയോഗിച്ച് professional background removal. Free tier: 50 previews/month.
+          </div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:6px">API Key (remove.bg)</div>
+          <div class="api-row">
+            <input type="password" id="apiKeyInput" placeholder="rmvbg_xxxxx..." style="font-size:11px">
+            <button class="api-toggle" onclick="toggleApiVis()" title="Show/Hide">
+              <i class="ti ti-eye" id="apiEyeIcon" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:10px">
+            <a href="https://www.remove.bg/api" target="_blank" style="color:var(--accent)">remove.bg</a> ൽ free API key നേടാം
+          </div>
+          <button class="btn btn-success" onclick="removeBGWithAPI()">
+            <i class="ti ti-layers-subtract" aria-hidden="true"></i> Remove Background (AI)
+          </button>
+        </div>
+
+        <!-- LOCAL PANEL -->
+        <div id="localPanel" style="display:none">
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;line-height:1.6">
+            Color-based local background removal — solid/uniform backgrounds ആണ് best. Threshold adjust ചെയ്ത് precision കൂട്ടാം.
+          </div>
+          <div class="slider-row">
+            <div class="slider-label">Threshold <span id="threshVal">30</span></div>
+            <input type="range" min="5" max="100" value="30" id="bgThreshold" oninput="document.getElementById('threshVal').textContent=this.value">
+          </div>
+          <div class="slider-row">
+            <div class="slider-label">Feather Edge <span id="featherVal">2</span></div>
+            <input type="range" min="0" max="10" value="2" id="bgFeather" oninput="document.getElementById('featherVal').textContent=this.value">
+          </div>
+          <button class="btn btn-success" onclick="removeBGLocal()">
+            <i class="ti ti-wand" aria-hidden="true"></i> Remove Background
+          </button>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px">
+            Corner pixel-ൽ click ചെയ്ത് sample color select ചെയ്യൂ
+          </div>
+          <button class="btn btn-outline" onclick="pickBGColor()" id="pickBtn">
+            <i class="ti ti-color-picker" aria-hidden="true"></i> Pick BG Color from Image
+          </button>
+        </div>
+
+        <div class="progress-bar" id="bgProgress">
+          <div class="progress-fill" id="bgProgressFill"></div>
+        </div>
+        <div class="bg-status" id="bgStatus">
+          <i class="ti ti-info-circle" aria-hidden="true"></i>
+          Image upload ചെയ്‌ത് background remove ചെയ്യൂ
+        </div>
+
+        <div class="sec">New Background Color</div>
+        <div class="bg-color-row">
+          <div class="checker-swatch active" id="transpSwatch" onclick="setNewBG('transparent',this)" title="Transparent"></div>
+          <div class="bg-color-swatch active" style="background:#ffffff" data-color="#ffffff" onclick="setNewBG('#ffffff',this)" title="White"></div>
+          <div class="bg-color-swatch" style="background:#000000" data-color="#000000" onclick="setNewBG('#000000',this)" title="Black"></div>
+          <div class="bg-color-swatch" style="background:#1a1a2e" data-color="#1a1a2e" onclick="setNewBG('#1a1a2e',this)" title="Dark Navy"></div>
+          <div class="bg-color-swatch" style="background:#f0f4ff" data-color="#f0f4ff" onclick="setNewBG('#f0f4ff',this)" title="Light Blue"></div>
+          <div class="bg-color-swatch" style="background:#fff0f0" data-color="#fff0f0" onclick="setNewBG('#fff0f0',this)" title="Light Pink"></div>
+          <div class="bg-color-swatch" style="background:#f0fff0" data-color="#f0fff0" onclick="setNewBG('#f0fff0',this)" title="Light Green"></div>
+          <input type="color" id="customBGColor" value="#4a90e2" title="Custom Color"
+            style="width:24px;height:24px;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;padding:0;background:none"
+            onchange="setNewBG(this.value,null)">
+        </div>
+        <button class="btn btn-outline" onclick="restoreBG()">
+          <i class="ti ti-arrow-back-up" aria-hidden="true"></i> Restore Original BG
+        </button>
+      </div>
+    </div>
+
+  </div><!-- end sidebar-left -->
+
+  <!-- CENTER -->
+  <div class="center-col">
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <button class="tool-btn active" id="tb-select" onclick="setTool('select',this)">
+        <i class="ti ti-pointer" aria-hidden="true"></i> Select
+      </button>
+      <button class="tool-btn" id="tb-text" onclick="setTool('text',this)">
+        <i class="ti ti-letter-t" aria-hidden="true"></i> Text
+      </button>
+      <button class="tool-btn" id="tb-location" onclick="setTool('location',this)">
+        <i class="ti ti-map-pin" aria-hidden="true"></i> Location
+      </button>
+      <button class="tool-btn" id="tb-crop" onclick="setTool('crop',this)">
+        <i class="ti ti-crop" aria-hidden="true"></i> Crop
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" onclick="zoomIn()"><i class="ti ti-zoom-in" aria-hidden="true"></i></button>
+      <button class="tool-btn" onclick="zoomOut()"><i class="ti ti-zoom-out" aria-hidden="true"></i></button>
+      <button class="tool-btn" onclick="zoomFit()"><i class="ti ti-maximize" aria-hidden="true"></i></button>
+      <div class="tool-info" id="zoomLabel">100%</div>
+      <div id="cropActions" style="display:none;gap:6px;align-items:center;margin-left:6px">
+        <button class="tool-btn" style="background:var(--success);color:#fff;border-color:var(--success)" onclick="applyCrop()"><i class="ti ti-check" aria-hidden="true"></i> Apply Crop</button>
+        <button class="tool-btn" onclick="cancelCrop()"><i class="ti ti-x" aria-hidden="true"></i> Cancel</button>
+      </div>
+      <div class="tool-spacer"></div>
+      <button class="tool-btn" onclick="copyToClipboard()"><i class="ti ti-copy" aria-hidden="true"></i> Copy</button>
+      <button class="tool-btn" onclick="exportImage()"><i class="ti ti-download" aria-hidden="true"></i> Download</button>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-area checker-bg" id="canvasArea">
+      <div class="empty-state" id="emptyState" onclick="document.getElementById('fileInput').click()">
+        <i class="ti ti-photo-plus" aria-hidden="true"></i>
+        <p>ഫോട്ടോ click ചെയ്‌ത് അപ്‌ലോഡ് ചെയ്യൂ</p>
+        <small>PNG, JPEG, WebP — Drag & Drop ഉം ചെയ്യാം</small>
+      </div>
+      <div class="canvas-wrap" id="canvasWrap" style="display:none">
+        <canvas id="mainCanvas"></canvas>
+        <div id="cropBox" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,0.55);display:none;pointer-events:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar-right">
+
+    <!-- TOOL HINT -->
+    <div id="toolHint" style="font-size:11px;color:var(--text-tertiary);background:var(--bg-secondary);border-radius:var(--radius-sm);padding:10px;margin-bottom:12px;line-height:1.6;text-align:center">
+      <i class="ti ti-info-circle" aria-hidden="true"></i> <span id="toolHintText">Text, Location, Crop tools toolbar-ൽ നിന്ന് select ചെയ്യൂ</span>
+    </div>
+
+    <!-- TEXT PANEL -->
+    <div id="textPanel" style="display:none">
+      <div class="sec">Text Overlay</div>
+      <input type="text" id="textInput" placeholder="Text ടൈപ്പ് ചെയ്യൂ..." oninput="renderCanvas()">
+      <select id="fontSelect" onchange="renderCanvas()">
+        <option>Arial</option>
+        <option>Georgia</option>
+        <option>Courier New</option>
+        <option>Impact</option>
+        <option>Trebuchet MS</option>
+        <option>Palatino Linotype</option>
+        <option>Comic Sans MS</option>
+      </select>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="btn btn-outline" style="margin-bottom:0;flex:1;padding:6px" onclick="toggleBold()" id="boldBtn">
+          <i class="ti ti-bold" aria-hidden="true"></i>
+        </button>
+        <button class="btn btn-outline" style="margin-bottom:0;flex:1;padding:6px" onclick="toggleItalic()" id="italicBtn">
+          <i class="ti ti-italic" aria-hidden="true"></i>
+        </button>
+        <button class="btn btn-outline" style="margin-bottom:0;flex:1;padding:6px" onclick="toggleShadow()" id="shadowBtn">
+          <i class="ti ti-shadow" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Font Size <span id="fsVal">32</span>px</div>
+        <input type="range" min="10" max="140" value="32" id="fontSize" oninput="document.getElementById('fsVal').textContent=this.value;renderCanvas()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Opacity <span id="txOpVal">100</span>%</div>
+        <input type="range" min="10" max="100" value="100" id="textOpacity" oninput="document.getElementById('txOpVal').textContent=this.value;renderCanvas()">
+      </div>
+      <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:6px">Text Color</div>
+      <div class="color-row" id="textColors">
+        <div class="swatch active" style="background:#ffffff" data-c="#ffffff" onclick="selectTextColor(this)"></div>
+        <div class="swatch" style="background:#000000" data-c="#000000" onclick="selectTextColor(this)"></div>
+        <div class="swatch" style="background:#FFD700" data-c="#FFD700" onclick="selectTextColor(this)"></div>
+        <div class="swatch" style="background:#FF4444" data-c="#FF4444" onclick="selectTextColor(this)"></div>
+        <div class="swatch" style="background:#44AAFF" data-c="#44AAFF" onclick="selectTextColor(this)"></div>
+        <div class="swatch" style="background:#FF88DD" data-c="#FF88DD" onclick="selectTextColor(this)"></div>
+        <div class="swatch" style="background:#44FF88" data-c="#44FF88" onclick="selectTextColor(this)"></div>
+        <div class="swatch" style="background:#FF8C00" data-c="#FF8C00" onclick="selectTextColor(this)"></div>
+        <input type="color" value="#ffffff" id="customTextColor" style="width:22px;height:22px;border:1.5px solid var(--border);border-radius:50%;padding:0;cursor:pointer;background:none" onchange="textColor=this.value;renderCanvas()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Position X <span id="txVal">50</span>%</div>
+        <input type="range" min="0" max="100" value="50" id="textX" oninput="document.getElementById('txVal').textContent=this.value;renderCanvas()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Position Y <span id="tyVal">80</span>%</div>
+        <input type="range" min="0" max="100" value="80" id="textY" oninput="document.getElementById('tyVal').textContent=this.value;renderCanvas()">
+      </div>
+    </div>
+
+    <!-- LOCATION PANEL -->
+    <div id="locationPanel" style="display:none">
+      <div class="sec">Location Tag</div>
+      <input type="text" id="locSearch" placeholder="📍 സ്ഥലം തിരയൂ..." oninput="searchLocation(this.value)">
+      <div id="locSuggestions"></div>
+      <div id="currentLocBox" style="display:none">
+        <div class="loc-badge">
+          <i class="ti ti-map-pin" aria-hidden="true"></i>
+          <div>
+            <div class="loc-badge-name" id="locNameTxt"></div>
+            <div class="loc-badge-coords" id="locCoordsTxt"></div>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Position</div>
+          <select id="locPos" onchange="renderCanvas()">
+            <option value="bl">Bottom Left</option>
+            <option value="br">Bottom Right</option>
+            <option value="tl">Top Left</option>
+            <option value="tr">Top Right</option>
+          </select>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Badge Size <span id="locSzVal">1</span>x</div>
+          <input type="range" min="0.6" max="2" step="0.1" value="1" id="locSize" oninput="document.getElementById('locSzVal').textContent=parseFloat(this.value).toFixed(1);renderCanvas()">
+        </div>
+        <button class="btn btn-danger-outline" onclick="removeLocation()">
+          <i class="ti ti-trash" aria-hidden="true"></i> Remove Location
+        </button>
+      </div>
+      <button class="btn btn-outline" onclick="getGPS()">
+        <i class="ti ti-current-location" aria-hidden="true"></i> Use My GPS Location
+      </button>
+    </div>
+
+    <!-- EXPORT PANEL -->
+    <div>
+      <div class="sec">Export Settings</div>
+      <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:4px">Format</div>
+      <select id="exportFormat">
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/png">PNG (Transparent support)</option>
+        <option value="image/webp">WebP</option>
+      </select>
+      <div class="slider-row">
+        <div class="slider-label">Quality <span id="qVal">95</span>%</div>
+        <input type="range" min="10" max="100" value="95" id="quality" oninput="document.getElementById('qVal').textContent=this.value">
+      </div>
+      <button class="btn btn-accent" onclick="exportImage()">
+        <i class="ti ti-download" aria-hidden="true"></i> Download Image
+      </button>
+      <button class="btn btn-outline" onclick="copyToClipboard()">
+        <i class="ti ti-copy" aria-hidden="true"></i> Copy to Clipboard
+      </button>
+    </div>
+
+  </div><!-- end sidebar-right -->
+</div><!-- end main -->
+
+<div id="toast"></div>
+
+<!-- CAMERA MODAL -->
+<div id="cameraModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9998;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="position:relative;max-width:92vw;max-height:78vh;border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+    <video id="cameraVideo" autoplay playsinline style="display:block;max-width:92vw;max-height:78vh;background:#000"></video>
+    <canvas id="captureCanvas" style="display:none"></canvas>
+    <div id="cameraLocBadge" style="display:none;position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.7);color:#fff;font-size:12px;padding:6px 10px;border-radius:16px;align-items:center;gap:6px">
+      <i class="ti ti-map-pin" aria-hidden="true" style="color:#ff3b30"></i><span id="cameraLocText">Location തിരയുന്നു...</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:14px;align-items:center;margin-top:20px">
+    <button class="header-btn" onclick="closeCamera()" style="padding:10px 16px">
+      <i class="ti ti-x" aria-hidden="true"></i> Close
+    </button>
+    <button onclick="capturePhoto()" title="Capture"
+      style="width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <i class="ti ti-camera" aria-hidden="true" style="font-size:26px;color:#1c1c1e"></i>
+    </button>
+    <button class="header-btn" onclick="switchCamera()" style="padding:10px 16px">
+      <i class="ti ti-camera-rotate" aria-hidden="true"></i> Switch
+    </button>
+  </div>
+  <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:10px;text-align:center">
+    ഫോട്ടോ എടുക്കുമ്പോൾ location automatic ആയി add ആകും
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+let originalImg = null;
+let bgRemovedImg = null; // stores canvas after BG removal
+let currentFilter = 'none';
+let rotation = 0;
+let isFlippedH = false, isFlippedV = false;
+let textColor = '#ffffff';
+let textBold = false, textItalic = false, textShadow = true;
+let locationData = null;
+let currentTool = 'select';
+let zoomLevel = 1;
+let newBGColor = 'transparent';
+let bgMethod = 'ai';
+let pickerMode = false;
+let sampledBGColor = null;
+let cameraStream = null;
+let currentFacingMode = 'environment'; // back camera default
+let cameraLocationCache = null;
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const adj = { brightness:0, contrast:0, exposure:0, saturation:0, hue:0, temperature:0, sharpen:0, blur:0, vignette:0, noise:0 };
+
+// ─── FILE LOAD ────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const ok = ['png','jpg','jpeg','webp'].includes(f.name.split('.').pop().toLowerCase());
+  if (!ok) { showToast('PNG, JPEG, WebP ഫയൽ മാത്രം'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      originalImg = img;
+      bgRemovedImg = null;
+      resetSliders();
+      renderCanvas();
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('canvasWrap').style.display = 'block';
+      document.getElementById('imgInfoBox').innerHTML =
+        `<b>File:</b> ${f.name}<br><b>Size:</b> ${img.width} × ${img.height}px<br><b>File size:</b> ${(f.size/1024).toFixed(1)} KB<br><b>Type:</b> ${f.type||'image'}`;
+      showToast('Image loaded!');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(f);
+  e.target.value = '';
+});
+
+// Drag & Drop
+const canvasArea = document.getElementById('canvasArea');
+const uploadZone = document.getElementById('uploadZone');
+[canvasArea, uploadZone].forEach(el => {
+  el.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+  el.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); uploadZone.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if (f) {
+      const dt = new DataTransfer(); dt.items.add(f);
+      document.getElementById('fileInput').files = dt.files;
+      document.getElementById('fileInput').dispatchEvent(new Event('change'));
+    }
+  });
+});
+
+// ─── CAMERA ───────────────────────────────────────────────────
+async function openCamera() {
+  const modal = document.getElementById('cameraModal');
+  const video = document.getElementById('cameraVideo');
+  const badge = document.getElementById('cameraLocBadge');
+  const badgeText = document.getElementById('cameraLocText');
+
+  modal.style.display = 'flex';
+  badge.style.display = 'flex';
+  badgeText.textContent = 'Location തിരയുന്നു...';
+  cameraLocationCache = null;
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: currentFacingMode },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+  } catch (err) {
+    showToast('ക്യാമറ access ലഭ്യമല്ല — permission check ചെയ്യൂ');
+    closeCamera();
+    return;
+  }
+
+  // Fetch location in background while camera is open, so it's ready by capture time
+  if (navigator.geolocation) {
+    getCurrentLocationData()
+      .then(loc => {
+        cameraLocationCache = loc;
+        badgeText.textContent = loc.name;
+      })
+      .catch(() => {
+        badgeText.textContent = 'Location ലഭ്യമല്ല';
+      });
+  } else {
+    badgeText.textContent = 'GPS ലഭ്യമല്ല';
+  }
+}
+
+function closeCamera() {
+  const modal = document.getElementById('cameraModal');
+  const video = document.getElementById('cameraVideo');
+  modal.style.display = 'none';
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  video.srcObject = null;
+}
+
+async function switchCamera() {
+  currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+  }
+  const video = document.getElementById('cameraVideo');
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: currentFacingMode },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+  } catch (err) {
+    showToast('ക്യാമറ switch ചെയ്യാൻ കഴിഞ്ഞില്ല');
+  }
+}
+
+function capturePhoto() {
+  const video = document.getElementById('cameraVideo');
+  if (!video.videoWidth) { showToast('ക്യാമറ ready ആയിട്ടില്ല, ഒന്നുകൂടെ try ചെയ്യൂ'); return; }
+
+  const cap = document.getElementById('captureCanvas');
+  cap.width = video.videoWidth;
+  cap.height = video.videoHeight;
+  const cctx = cap.getContext('2d');
+  // Mirror the image if using front camera, so it matches what user saw
+  if (currentFacingMode === 'user') {
+    cctx.translate(cap.width, 0);
+    cctx.scale(-1, 1);
+  }
+  cctx.drawImage(video, 0, 0, cap.width, cap.height);
+
+  const dataUrl = cap.toDataURL('image/png');
+  const img = new Image();
+  img.onload = () => {
+    originalImg = img;
+    bgRemovedImg = null;
+    resetSliders();
+    zoomLevel = 1;
+
+    // Auto-apply location if it was successfully fetched while camera was open
+    if (cameraLocationCache) {
+      setLocation(cameraLocationCache);
+    } else {
+      renderCanvas();
+    }
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('canvasWrap').style.display = 'block';
+    document.getElementById('imgInfoBox').innerHTML =
+      `<b>Source:</b> Camera<br><b>Size:</b> ${img.width} × ${img.height}px` +
+      (cameraLocationCache ? `<br><b>Location:</b> ${cameraLocationCache.name}` : '');
+
+    closeCamera();
+    showToast(cameraLocationCache ? `📸 Photo + 📍 ${cameraLocationCache.name}` : '📸 Photo captured!');
+  };
+  img.src = dataUrl;
+}
+
+
+// ─── RENDER ───────────────────────────────────────────────────
+function renderCanvas(skipOverlays) {
+  if (!originalImg) return;
+  const src = bgRemovedImg || originalImg;
+  const MAX_W = 820, MAX_H = window.innerHeight - 160;
+  let w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+  if (src instanceof HTMLCanvasElement) { w = src.width; h = src.height; }
+  let scale = Math.min(1, MAX_W / w, MAX_H / h) * zoomLevel;
+  const dw = Math.round(w * scale), dh = Math.round(h * scale);
+  canvas.width = dw; canvas.height = dh;
+  document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
+
+  ctx.clearRect(0, 0, dw, dh);
+
+  // Draw new background if BG was removed
+  if (bgRemovedImg) {
+    if (newBGColor && newBGColor !== 'transparent') {
+      ctx.fillStyle = newBGColor;
+      ctx.fillRect(0, 0, dw, dh);
+    }
+  }
+
+  ctx.save();
+  if (rotation || isFlippedH || isFlippedV) {
+    ctx.translate(dw / 2, dh / 2);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.scale(isFlippedH ? -1 : 1, isFlippedV ? -1 : 1);
+    ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh);
+  } else {
+    ctx.drawImage(src, 0, 0, dw, dh);
+  }
+  ctx.restore();
+
+  // Pixel adjustments
+  if (currentFilter !== 'none' || hasAdj()) {
+    const id = ctx.getImageData(0, 0, dw, dh);
+    applyPixel(id);
+    ctx.putImageData(id, 0, 0);
+  }
+
+  // Blur
+  const blurV = adj.blur;
+  if (blurV > 0) {
+    const tmp = document.createElement('canvas');
+    tmp.width = dw; tmp.height = dh;
+    const tc = tmp.getContext('2d');
+    tc.filter = `blur(${blurV * 0.6}px)`;
+    tc.drawImage(canvas, 0, 0);
+    ctx.clearRect(0, 0, dw, dh);
+    if (bgRemovedImg && newBGColor !== 'transparent') { ctx.fillStyle = newBGColor; ctx.fillRect(0, 0, dw, dh); }
+    ctx.drawImage(tmp, 0, 0);
+  }
+
+  // Vignette
+  if (adj.vignette > 0) {
+    const g = ctx.createRadialGradient(dw/2,dh/2,Math.min(dw,dh)*0.25,dw/2,dh/2,Math.max(dw,dh)*0.75);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(0,0,0,${adj.vignette / 160})`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, dw, dh);
+  }
+
+  // Location Badge
+  if (locationData && !skipOverlays) drawLocBadge(dw, dh);
+
+  // Text
+  const txt = document.getElementById('textInput').value;
+  if (txt && !skipOverlays) drawText(txt, dw, dh);
+}
+
+function hasAdj() {
+  return Object.values(adj).some(v => v !== 0);
+}
+
+// ─── PIXEL PROCESSING ─────────────────────────────────────────
+function applyPixel(imgData) {
+  const d = imgData.data;
+  const br = adj.brightness / 100 * 128;
+  const ex = adj.exposure / 100 * 60;
+  const co = adj.contrast / 100;
+  const factor = (259 * (co * 255 + 255)) / (255 * (259 - co * 255));
+  const sat = (adj.saturation + 100) / 100;
+  const tmp = adj.temperature / 100 * 30;
+  const hueShift = adj.hue;
+
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i], g = d[i+1], b = d[i+2];
+
+    // Filter
+    [r, g, b] = filterPixel(r, g, b, currentFilter);
+
+    // Brightness + Exposure
+    r += br + ex; g += br + ex; b += br + ex;
+
+    // Contrast
+    r = factor * (r - 128) + 128;
+    g = factor * (g - 128) + 128;
+    b = factor * (b - 128) + 128;
+
+    // Temperature
+    r = Math.min(255, r + tmp);
+    b = Math.min(255, b - tmp);
+
+    // Saturation
+    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+    r = gray + (r - gray) * sat;
+    g = gray + (g - gray) * sat;
+    b = gray + (b - gray) * sat;
+
+    // Hue shift
+    if (hueShift !== 0) {
+      const [h, s, lv] = rgbToHsl(r, g, b);
+      const nh = ((h + hueShift / 360 + 1) % 1);
+      [r, g, b] = hslToRgb(nh, s, lv);
+    }
+
+    // Noise
+    if (adj.noise > 0) {
+      const n = (Math.random() - 0.5) * adj.noise * 1.2;
+      r += n; g += n; b += n;
+    }
+
+    d[i]   = Math.min(255, Math.max(0, r));
+    d[i+1] = Math.min(255, Math.max(0, g));
+    d[i+2] = Math.min(255, Math.max(0, b));
+  }
+}
+
+function filterPixel(r, g, b, f) {
+  switch(f) {
+    case 'bw':     { const gr = 0.299*r+0.587*g+0.114*b; return [gr,gr,gr]; }
+    case 'sepia':  return [r*0.393+g*0.769+b*0.189, r*0.349+g*0.686+b*0.168, r*0.272+g*0.534+b*0.131];
+    case 'vivid':  return [Math.min(255,r*1.25), Math.min(255,g*1.1), Math.min(255,b*0.88)];
+    case 'cool':   return [r*0.88, g*0.96, Math.min(255,b*1.22)];
+    case 'warm':   return [Math.min(255,r*1.18), Math.min(255,g*1.06), b*0.82];
+    case 'fade':   return [r*0.82+22, g*0.82+22, b*0.82+22];
+    case 'drama':  { const gr=(0.299*r+0.587*g+0.114*b); return [Math.min(255,(gr*0.3+r*0.7)*1.12), Math.min(255,(gr*0.3+g*0.7)*1.1), Math.min(255,(gr*0.5+b*0.5)*1.1)]; }
+    case 'chrome': return [Math.min(255,r*1.05), Math.min(255,g*1.02), Math.min(255,b*0.95)];
+    case 'lomo':   { const gr=0.299*r+0.587*g+0.114*b; return [Math.min(255,r*1.3+gr*0.1), Math.min(255,g*0.9), Math.min(255,b*1.15)]; }
+    case 'vintage':return [Math.min(255,r*0.9+40), Math.min(255,g*0.85+20), Math.min(255,b*0.7+10)];
+    case 'noir':   { const gr=0.299*r+0.587*g+0.114*b; const c=(gr-128)*1.5+128; return [c,c,c]; }
+    default: return [r, g, b];
+  }
+}
+
+// HSL helpers
+function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;if(max===min){h=s=0;}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}return[h,s,l];}
+function hslToRgb(h,s,l){if(s===0)return[l*255,l*255,l*255];const q=l<0.5?l*(1+s):l+s-l*s,p=2*l-q;return[hue2rgb(p,q,h+1/3)*255,hue2rgb(p,q,h)*255,hue2rgb(p,q,h-1/3)*255];}
+function hue2rgb(p,q,t){if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;}
+
+// ─── TEXT ─────────────────────────────────────────────────────
+function drawText(txt, w, h) {
+  const fs = parseInt(document.getElementById('fontSize').value) || 32;
+  const tx = (parseInt(document.getElementById('textX').value) || 50) / 100 * w;
+  const ty = (parseInt(document.getElementById('textY').value) || 80) / 100 * h;
+  const font = document.getElementById('fontSelect').value;
+  const op = (parseInt(document.getElementById('textOpacity').value) || 100) / 100;
+  const style = `${textItalic?'italic ':''} ${textBold?'bold ':''} ${fs}px ${font}`;
+  ctx.save();
+  ctx.globalAlpha = op;
+  ctx.font = style;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (textShadow) {
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillText(txt, tx + 2, ty + 2);
+  }
+  ctx.fillStyle = textColor;
+  ctx.fillText(txt, tx, ty);
+  ctx.restore();
+}
+
+function toggleBold()   { textBold   = !textBold;   document.getElementById('boldBtn').classList.toggle('active', textBold);   renderCanvas(); }
+function toggleItalic() { textItalic = !textItalic; document.getElementById('italicBtn').classList.toggle('active', textItalic); renderCanvas(); }
+function toggleShadow() { textShadow = !textShadow; document.getElementById('shadowBtn').classList.toggle('active', textShadow); renderCanvas(); }
+function selectTextColor(el) {
+  document.querySelectorAll('#textColors .swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active'); textColor = el.dataset.c; renderCanvas();
+}
+
+// ─── LOCATION ─────────────────────────────────────────────────
+function drawLocBadge(w, h) {
+  const pos = document.getElementById('locPos').value;
+  const scale = parseFloat(document.getElementById('locSize').value) || 1;
+  const name = locationData.name;
+  const coords = locationData.coords;
+  const padX = 14 * scale, padY = 8 * scale;
+  const lineH = 14 * scale;
+  const iconSz = 14 * scale;
+  ctx.font = `bold ${12*scale}px Arial`;
+  const tw1 = ctx.measureText(name).width;
+  ctx.font = `${10*scale}px Arial`;
+  const tw2 = ctx.measureText(coords).width;
+  const bw = Math.max(tw1, tw2) + padX * 2 + iconSz + 6 * scale;
+  const bh = lineH * 2 + padY * 2 + 4 * scale;
+  const margin = 12;
+  let x, y;
+  if (pos==='bl') { x=margin; y=h-margin-bh; }
+  else if (pos==='br') { x=w-margin-bw; y=h-margin-bh; }
+  else if (pos==='tl') { x=margin; y=margin; }
+  else { x=w-margin-bw; y=margin; }
+  const r = 8 * scale;
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = 'rgba(15,15,20,0.82)';
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+bw-r,y); ctx.quadraticCurveTo(x+bw,y,x+bw,y+r);
+  ctx.lineTo(x+bw,y+bh-r); ctx.quadraticCurveTo(x+bw,y+bh,x+bw-r,y+bh);
+  ctx.lineTo(x+r,y+bh); ctx.quadraticCurveTo(x,y+bh,x,y+bh-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#FF3B30';
+  ctx.font = `bold ${iconSz+2}px Arial`;
+  ctx.fillText('📍', x + padX - 2, y + padY + lineH * 0.75);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${12*scale}px Arial`;
+  ctx.fillText(name, x + padX + iconSz + 4*scale, y + padY + lineH * 0.75);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = `${10*scale}px Arial`;
+  ctx.fillText(coords, x + padX + iconSz + 4*scale, y + padY + lineH * 1.85);
+  ctx.restore();
+}
+
+const locPresets = [
+  {name:'Vaikam, Kerala',coords:'9.7491° N, 76.3972° E'},
+  {name:'Kochi, Kerala',coords:'9.9312° N, 76.2673° E'},
+  {name:'Thiruvananthapuram, Kerala',coords:'8.5241° N, 76.9366° E'},
+  {name:'Kozhikode, Kerala',coords:'11.2588° N, 75.7804° E'},
+  {name:'Thrissur, Kerala',coords:'10.5276° N, 76.2144° E'},
+  {name:'Munnar, Kerala',coords:'10.0889° N, 77.0595° E'},
+  {name:'Alleppey (Alappuzha), Kerala',coords:'9.4981° N, 76.3388° E'},
+  {name:'Wayanad, Kerala',coords:'11.6854° N, 76.1320° E'},
+  {name:'Kannur, Kerala',coords:'11.8745° N, 75.3704° E'},
+  {name:'Kollam, Kerala',coords:'8.8932° N, 76.6141° E'},
+  {name:'Palakkad, Kerala',coords:'10.7867° N, 76.6548° E'},
+  {name:'Malappuram, Kerala',coords:'11.0730° N, 76.0740° E'},
+  {name:'Pathanamthitta, Kerala',coords:'9.2648° N, 76.7870° E'},
+  {name:'Idukki, Kerala',coords:'9.9189° N, 77.1025° E'},
+  {name:'Mumbai, Maharashtra',coords:'19.0760° N, 72.8777° E'},
+  {name:'Delhi, India',coords:'28.6139° N, 77.2090° E'},
+  {name:'Bengaluru, Karnataka',coords:'12.9716° N, 77.5946° E'},
+  {name:'Chennai, Tamil Nadu',coords:'13.0827° N, 80.2707° E'},
+  {name:'Goa, India',coords:'15.2993° N, 74.1240° E'},
+  {name:'Hyderabad, Telangana',coords:'17.3850° N, 78.4867° E'},
+  {name:'New York, USA',coords:'40.7128° N, 74.0060° W'},
+  {name:'London, UK',coords:'51.5074° N, 0.1278° W'},
+  {name:'Paris, France',coords:'48.8566° N, 2.3522° E'},
+  {name:'Tokyo, Japan',coords:'35.6762° N, 139.6503° E'},
+  {name:'Dubai, UAE',coords:'25.2048° N, 55.2708° E'},
+  {name:'Singapore',coords:'1.3521° N, 103.8198° E'},
+  {name:'Sydney, Australia',coords:'33.8688° S, 151.2093° E'},
+];
+
+function searchLocation(q) {
+  const div = document.getElementById('locSuggestions');
+  if (!q.trim()) { div.innerHTML=''; return; }
+  const found = locPresets.filter(l => l.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
+  div.innerHTML = found.map(l =>
+    `<div class="loc-item" onclick='setLocation(${JSON.stringify(l)})'>
+      ${l.name}<small>${l.coords}</small>
+    </div>`
+  ).join('');
+}
+
+function setLocation(loc) {
+  locationData = loc;
+  document.getElementById('currentLocBox').style.display = 'block';
+  document.getElementById('locNameTxt').textContent = loc.name;
+  document.getElementById('locCoordsTxt').textContent = loc.coords;
+  document.getElementById('locSuggestions').innerHTML = '';
+  document.getElementById('locSearch').value = loc.name;
+  renderCanvas();
+  showToast('Location added!');
+}
+
+function removeLocation() {
+  locationData = null;
+  document.getElementById('currentLocBox').style.display = 'none';
+  document.getElementById('locSearch').value = '';
+  renderCanvas();
+}
+
+// Reusable: get current GPS position + reverse-geocoded place name
+function getCurrentLocationData() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error('no-geo')); return; }
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const coordStr = `${lat.toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'E' : 'W'}`;
+        let placeName = 'My Location';
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en', 'User-Agent': 'PhotoEditorPro/1.0' } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const a = data.address || {};
+            const neighbourhood = a.neighbourhood || a.quarter || a.ward || a.allotments || '';
+            const suburb = a.suburb || a.village || a.hamlet || a.locality ||
+                           a.isolated_dwelling || a.residential || '';
+            const city = a.city || a.town || a.municipality || a.city_district || '';
+            const district = a.state_district || a.county || a.district || '';
+            const state = a.state || '';
+
+            if (neighbourhood && suburb && neighbourhood !== suburb) {
+              placeName = `${neighbourhood}, ${suburb}`;
+            } else if (suburb && city && suburb !== city) {
+              placeName = `${suburb}, ${city}`;
+            } else if (suburb && district && suburb !== district) {
+              placeName = `${suburb}, ${district}`;
+            } else if (city && district && city !== district) {
+              placeName = `${city}, ${district}`;
+            } else if (city && state) {
+              placeName = `${city}, ${state}`;
+            } else if (district && state) {
+              placeName = `${district}, ${state}`;
+            } else if (data.display_name) {
+              const parts = data.display_name
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s && !/^\d+$/.test(s) && s.length > 1);
+              placeName = parts.slice(0, 2).join(', ');
+            }
+          }
+        } catch (e) {
+          placeName = 'My Location';
+        }
+        resolve({ name: placeName, coords: coordStr });
+      },
+      err => reject(err),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+}
+
+async function getGPS() {
+  if (!navigator.geolocation) { showToast('GPS ലഭ്യമല്ല'); return; }
+  showToast('📍 Location ലോഡ് ആകുന്നു...');
+  try {
+    const loc = await getCurrentLocationData();
+    setLocation(loc);
+    showToast(`📍 ${loc.name}`);
+  } catch (err) {
+    const msgs = { 1: 'Permission denied', 2: 'Position unavailable', 3: 'Timeout' };
+    showToast('Location error: ' + (msgs[err.code] || 'Unknown'));
+  }
+}
+
+// ─── BG REMOVER ───────────────────────────────────────────────
+function setBGMethod(m, btn) {
+  bgMethod = m;
+  document.getElementById('methodAI').className = m==='ai' ? 'btn btn-accent' : 'btn btn-outline';
+  document.getElementById('methodLocal').className = m==='local' ? 'btn btn-accent' : 'btn btn-outline';
+  document.getElementById('aiPanel').style.display = m==='ai' ? 'block' : 'none';
+  document.getElementById('localPanel').style.display = m==='local' ? 'block' : 'none';
+}
+// fix style
+document.getElementById('methodAI').style.flex='1';
+document.getElementById('methodAI').style.marginBottom='0';
+document.getElementById('methodAI').style.fontSize='11px';
+document.getElementById('methodLocal').style.flex='1';
+document.getElementById('methodLocal').style.marginBottom='0';
+document.getElementById('methodLocal').style.fontSize='11px';
+
+function setProgress(pct, active) {
+  const bar = document.getElementById('bgProgress');
+  bar.classList.toggle('active', active);
+  document.getElementById('bgProgressFill').style.width = pct + '%';
+}
+
+function setBGStatus(msg, type='') {
+  const el = document.getElementById('bgStatus');
+  el.className = 'bg-status' + (type ? ' status-'+type : '');
+  const icons = {processing:'ti-loader-2', done:'ti-check', error:'ti-alert-circle'};
+  const icon = icons[type] || 'ti-info-circle';
+  el.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i>${msg}`;
+}
+
+async function removeBGWithAPI() {
+  if (!originalImg) { showToast('ആദ്യം image upload ചെയ്യൂ'); return; }
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (!apiKey) { setBGStatus('API Key ആവശ്യം ഉണ്ട്', 'error'); return; }
+
+  setBGStatus('Processing...', 'processing');
+  setProgress(20, true);
+
+  // Get image as blob
+  const tmpC = document.createElement('canvas');
+  tmpC.width = originalImg.width; tmpC.height = originalImg.height;
+  tmpC.getContext('2d').drawImage(originalImg, 0, 0);
+
+  tmpC.toBlob(async blob => {
+    try {
+      setProgress(50, true);
+      const fd = new FormData();
+      fd.append('image_file', blob, 'photo.png');
+      fd.append('size', 'auto');
+
+      const res = await fetch('https://api.remove.bg/v1.0/removebg', {
+        method: 'POST',
+        headers: { 'X-Api-Key': apiKey },
+        body: fd
+      });
+
+      setProgress(85, true);
+
+      if (!res.ok) {
+        const errData = await res.json().catch(()=>({}));
+        const msg = errData?.errors?.[0]?.title || `Error ${res.status}`;
+        setBGStatus(`API Error: ${msg}`, 'error');
+        setProgress(0, false);
+        return;
+      }
+
+      const resBlob = await res.blob();
+      const url = URL.createObjectURL(resBlob);
+      const img = new Image();
+      img.onload = () => {
+        const tmpC2 = document.createElement('canvas');
+        tmpC2.width = img.width; tmpC2.height = img.height;
+        tmpC2.getContext('2d').drawImage(img, 0, 0);
+        bgRemovedImg = tmpC2;
+        setProgress(100, true);
+        setTimeout(() => setProgress(0, false), 600);
+        setBGStatus('Background removed successfully!', 'done');
+        renderCanvas();
+        showToast('Background removed!');
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    } catch (err) {
+      setBGStatus('Network error. Check API key & connection.', 'error');
+      setProgress(0, false);
+    }
+  }, 'image/png');
+}
+
+// ─── LOCAL BG REMOVER ─────────────────────────────────────────
+let localBGColor = null;
+
+function pickBGColor() {
+  if (!originalImg) { showToast('Image upload ചെയ്യൂ'); return; }
+  pickerMode = true;
+  canvas.style.cursor = 'crosshair';
+  setBGStatus('Canvas-ൽ background click ചെയ്‌ത് color sample ചെയ്യൂ', 'processing');
+  document.getElementById('pickBtn').textContent = '🎯 Click on background color...';
+}
+
+canvas.addEventListener('click', e => {
+  if (pickerMode && originalImg) {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+    const y = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
+    const pixel = ctx.getImageData(x, y, 1, 1).data;
+    localBGColor = { r: pixel[0], g: pixel[1], b: pixel[2] };
+    pickerMode = false;
+    canvas.style.cursor = 'crosshair';
+    document.getElementById('pickBtn').innerHTML = '<i class="ti ti-color-picker" aria-hidden="true"></i> Pick BG Color from Image';
+    setBGStatus(`Color sampled: rgb(${localBGColor.r},${localBGColor.g},${localBGColor.b})`, 'done');
+    showToast('Color sampled! Now click Remove Background');
+    return;
+  }
+
+  if (!originalImg) return;
+  const rect = canvas.getBoundingClientRect();
+  const px = ((e.clientX - rect.left) / rect.width) * 100;
+  const py = ((e.clientY - rect.top) / rect.height) * 100;
+
+  if (currentTool === 'text') {
+    document.getElementById('textX').value = Math.round(px);
+    document.getElementById('textY').value = Math.round(py);
+    document.getElementById('txVal').textContent = Math.round(px);
+    document.getElementById('tyVal').textContent = Math.round(py);
+    if (!document.getElementById('textInput').value) {
+      document.getElementById('textInput').value = 'Text';
+    }
+    renderCanvas();
+    showToast('Text position സെറ്റ് ചെയ്‌തു!');
+  } else if (currentTool === 'location' && locationData) {
+    // Determine nearest corner based on click quadrant
+    const pos = (px < 50 ? (py < 50 ? 'tl' : 'bl') : (py < 50 ? 'tr' : 'br'));
+    document.getElementById('locPos').value = pos;
+    renderCanvas();
+    showToast('Location position സെറ്റ് ചെയ്‌തു!');
+  } else if (currentTool === 'location' && !locationData) {
+    showToast('ആദ്യം ഒരു location തിരയൂ അല്ലെങ്കിൽ GPS ഉപയോഗിക്കൂ');
+  }
+});
+
+function removeBGLocal() {
+  if (!originalImg) { showToast('Image upload ചെയ്യൂ'); return; }
+  setBGStatus('Processing locally...', 'processing');
+  setProgress(20, true);
+
+  setTimeout(() => {
+    const tmpC = document.createElement('canvas');
+    tmpC.width = originalImg.width; tmpC.height = originalImg.height;
+    const tc = tmpC.getContext('2d');
+    tc.drawImage(originalImg, 0, 0);
+    const id = tc.getImageData(0, 0, tmpC.width, tmpC.height);
+    const d = id.data;
+    const thresh = parseInt(document.getElementById('bgThreshold').value) || 30;
+    const feather = parseInt(document.getElementById('bgFeather').value) || 2;
+
+    // Determine BG color: use sampled or corner pixel
+    let bgR, bgG, bgB;
+    if (localBGColor) {
+      bgR = localBGColor.r; bgG = localBGColor.g; bgB = localBGColor.b;
+    } else {
+      bgR = d[0]; bgG = d[1]; bgB = d[2];
+    }
+
+    setProgress(50, true);
+
+    for (let i = 0; i < d.length; i += 4) {
+      const dr = Math.abs(d[i] - bgR);
+      const dg = Math.abs(d[i+1] - bgG);
+      const db = Math.abs(d[i+2] - bgB);
+      const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+      if (dist < thresh) {
+        d[i+3] = 0;
+      } else if (dist < thresh + feather * 8) {
+        const t = (dist - thresh) / (feather * 8);
+        d[i+3] = Math.round(t * 255);
+      }
+    }
+
+    tc.putImageData(id, 0, 0);
+    bgRemovedImg = tmpC;
+    setProgress(100, true);
+    setTimeout(() => setProgress(0, false), 600);
+    setBGStatus('Background removed (local)!', 'done');
+    renderCanvas();
+    showToast('Background removed!');
+    localBGColor = null; sampledBGColor = null;
+  }, 80);
+}
+
+function restoreBG() {
+  bgRemovedImg = null;
+  setBGStatus('Original background restored', '');
+  renderCanvas();
+  showToast('Background restored');
+}
+
+function setNewBG(color, el) {
+  newBGColor = color;
+  document.querySelectorAll('.bg-color-swatch, .checker-swatch').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderCanvas();
+}
+
+function toggleApiVis() {
+  const inp = document.getElementById('apiKeyInput');
+  const icon = document.getElementById('apiEyeIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.className = 'ti ti-eye-off';
+  } else {
+    inp.type = 'password';
+    icon.className = 'ti ti-eye';
+  }
+}
+
+// ─── TOOLS ────────────────────────────────────────────────────
+function setTool(t, btn) {
+  currentTool = t;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (t !== 'crop') cancelCrop();
+  updateRightPanelVisibility();
+  updateCanvasCursor();
+}
+
+function updateRightPanelVisibility() {
+  const textPanel = document.getElementById('textPanel');
+  const locPanel = document.getElementById('locationPanel');
+  const hint = document.getElementById('toolHint');
+  const hintText = document.getElementById('toolHintText');
+  textPanel.style.display = (currentTool === 'text') ? 'block' : 'none';
+  locPanel.style.display = (currentTool === 'location') ? 'block' : 'none';
+  if (currentTool === 'text') {
+    hint.style.display = 'block';
+    hintText.textContent = '📝 Canvas-ൽ click ചെയ്‌ത് text position ചെയ്യൂ';
+  } else if (currentTool === 'location') {
+    hint.style.display = 'block';
+    hintText.textContent = '📍 Canvas-ൽ click ചെയ്‌ത് location badge position ചെയ്യൂ';
+  } else if (currentTool === 'crop') {
+    hint.style.display = 'block';
+    hintText.textContent = '✂️ Canvas-ൽ drag ചെയ്‌ത് crop area select ചെയ്യൂ';
+  } else {
+    hint.style.display = 'block';
+    hintText.textContent = 'Text, Location, Crop tools toolbar-ൽ നിന്ന് select ചെയ്യൂ';
+  }
+}
+
+function updateCanvasCursor() {
+  if (currentTool === 'crop' || currentTool === 'text' || currentTool === 'location') {
+    canvas.style.cursor = 'crosshair';
+  } else {
+    canvas.style.cursor = 'default';
+  }
+}
+
+// ─── CROP TOOL ────────────────────────────────────────────────
+let cropStart = null, cropRect = null, isCropping = false;
+
+function initCropListeners() {
+  const wrap = document.getElementById('canvasWrap');
+  wrap.addEventListener('mousedown', e => {
+    if (currentTool !== 'crop' || !originalImg) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+    cropStart = { x, y };
+    isCropping = true;
+    const box = document.getElementById('cropBox');
+    box.style.display = 'block';
+    box.style.left = x + 'px';
+    box.style.top = y + 'px';
+    box.style.width = '0px';
+    box.style.height = '0px';
+    document.getElementById('cropActions').style.display = 'none';
+  });
+  wrap.addEventListener('mousemove', e => {
+    if (!isCropping || !cropStart) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+    const box = document.getElementById('cropBox');
+    const left = Math.min(cropStart.x, x);
+    const top = Math.min(cropStart.y, y);
+    box.style.left = left + 'px';
+    box.style.top = top + 'px';
+    box.style.width = Math.abs(x - cropStart.x) + 'px';
+    box.style.height = Math.abs(y - cropStart.y) + 'px';
+  });
+  window.addEventListener('mouseup', () => {
+    if (!isCropping) return;
+    isCropping = false;
+    const box = document.getElementById('cropBox');
+    const boxRect = box.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / canvasRect.width;
+    const scaleY = canvas.height / canvasRect.height;
+    const x = Math.round((boxRect.left - canvasRect.left) * scaleX);
+    const y = Math.round((boxRect.top - canvasRect.top) * scaleY);
+    const w = Math.round(boxRect.width * scaleX);
+    const h = Math.round(boxRect.height * scaleY);
+    if (w > 8 && h > 8) {
+      cropRect = {
+        x: Math.max(0, x),
+        y: Math.max(0, y),
+        w: Math.min(w, canvas.width - Math.max(0, x)),
+        h: Math.min(h, canvas.height - Math.max(0, y))
+      };
+      document.getElementById('cropActions').style.display = 'flex';
+    } else {
+      cropRect = null;
+      box.style.display = 'none';
+    }
+  });
+}
+
+function applyCrop() {
+  if (!cropRect || !originalImg) { showToast('Crop area select ചെയ്യൂ'); return; }
+  renderCanvas(true); // render without location/text overlays for a clean base capture
+  const { x, y, w, h } = cropRect;
+  let imgData;
+  try {
+    imgData = ctx.getImageData(x, y, w, h);
+  } catch (e) {
+    showToast('Crop error, again try ചെയ്യൂ');
+    return;
+  }
+  const tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  tmp.getContext('2d').putImageData(imgData, 0, 0);
+  const newImg = new Image();
+  newImg.onload = () => {
+    originalImg = newImg;
+    bgRemovedImg = null;
+    resetSliders(); // bakes in filters/rotation/flip, resets adjustments to neutral
+    zoomLevel = 1;
+    cancelCrop();
+    setTool('select', document.getElementById('tb-select'));
+    renderCanvas();
+    document.getElementById('imgInfoBox').innerHTML =
+      `<b>Size:</b> ${w} × ${h}px (cropped)`;
+    showToast('Crop applied!');
+  };
+  newImg.src = tmp.toDataURL('image/png');
+}
+
+function cancelCrop() {
+  cropRect = null;
+  isCropping = false;
+  const box = document.getElementById('cropBox');
+  if (box) box.style.display = 'none';
+  const actions = document.getElementById('cropActions');
+  if (actions) actions.style.display = 'none';
+}
+
+function rotateLeft()  { rotation = (rotation - 90 + 360) % 360; renderCanvas(); }
+function rotateRight() { rotation = (rotation + 90) % 360; renderCanvas(); }
+function flipH()       { isFlippedH = !isFlippedH; renderCanvas(); }
+function flipV()       { isFlippedV = !isFlippedV; renderCanvas(); }
+function zoomIn()      { zoomLevel = Math.min(4, zoomLevel * 1.25); renderCanvas(); }
+function zoomOut()     { zoomLevel = Math.max(0.2, zoomLevel / 1.25); renderCanvas(); }
+function zoomFit()     { zoomLevel = 1; renderCanvas(); }
+
+// ─── ADJUSTMENTS ──────────────────────────────────────────────
+function updateAdj() {
+  const ids = ['brightness','contrast','exposure','saturation','hue','temperature','sharpen','blur','vignette','noise'];
+  const vals = ['bVal','cVal','exVal','sVal','hVal','tVal','shVal','blVal','vgVal','noVal'];
+  ids.forEach((id, i) => {
+    adj[id] = parseInt(document.getElementById(id).value);
+    document.getElementById(vals[i]).textContent = adj[id];
+  });
+  renderCanvas();
+}
+
+function applyFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCanvas();
+}
+
+function resetSliders() {
+  const ids = ['brightness','contrast','exposure','saturation','hue','temperature','sharpen','blur','vignette','noise'];
+  const vals = ['bVal','cVal','exVal','sVal','hVal','tVal','shVal','blVal','vgVal','noVal'];
+  ids.forEach((id, i) => { document.getElementById(id).value = 0; document.getElementById(vals[i]).textContent = 0; adj[id] = 0; });
+  currentFilter = 'none';
+  rotation = 0; isFlippedH = false; isFlippedV = false;
+  document.querySelectorAll('.filter-btn').forEach((b, i) => b.classList.toggle('active', i===0));
+}
+
+function resetAll() {
+  bgRemovedImg = null; locationData = null;
+  document.getElementById('locSearch').value = '';
+  document.getElementById('currentLocBox').style.display = 'none';
+  document.getElementById('textInput').value = '';
+  setBGStatus('Image upload ചെയ്‌ത് background remove ചെയ്യൂ', '');
+  resetSliders();
+  cancelCrop();
+  setTool('select', document.getElementById('tb-select'));
+  renderCanvas();
+  showToast('Reset done!');
+}
+
+// ─── TABS ────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+}
+
+// ─── EXPORT ───────────────────────────────────────────────────
+function exportImage() {
+  if (!originalImg) { showToast('Image upload ചെയ്യൂ'); return; }
+  const fmt = document.getElementById('exportFormat').value;
+  const q = parseInt(document.getElementById('quality').value) / 100;
+  const ext = fmt.split('/')[1];
+  const link = document.createElement('a');
+  link.download = `edited-photo-${Date.now()}.${ext}`;
+  link.href = canvas.toDataURL(fmt, q);
+  link.click();
+  showToast('Download started!');
+}
+
+async function copyToClipboard() {
+  if (!originalImg) { showToast('Image upload ചെയ്യൂ'); return; }
+  try {
+    canvas.toBlob(async blob => {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      showToast('Image copied!');
+    }, 'image/png');
+  } catch(e) { showToast('Copy supported ആകുന്നില്ല, Download ഉപയോഗിക്കൂ'); }
+}
+
+// ─── TOAST ────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// Init
+setBGMethod('ai', null);
+initCropListeners();
+updateRightPanelVisibility();
+updateCanvasCursor();
+</script>
+</body>
+</html>
