@@ -257,6 +257,8 @@
   .tool-btn.active { background: var(--accent-light); color: var(--accent-text); border-color: var(--accent); }
   .tool-btn.danger { color: var(--danger); border-color: rgba(255,59,48,0.3); }
   .tool-btn.danger:hover { background: rgba(255,59,48,0.08); }
+  .tool-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .tool-btn:disabled:hover { background: transparent; color: var(--text-secondary); }
   .tool-sep { width: 0.5px; height: 26px; background: var(--border); margin: 0 4px; }
   .tool-spacer { flex: 1; }
   .tool-info { font-size: 11px; color: var(--text-tertiary); padding: 0 8px; }
@@ -642,6 +644,11 @@
     <i class="ti ti-camera-plus" aria-hidden="true"></i>
     <span class="logo-text">Photo Editor Pro</span>
   </div>
+  <!-- കൗണ്ടർ കോഡ് (കണ്ണുകളുടെ ഇമോജി ഉൾപ്പെടെ) -->
+  <div class="header-btn" style="cursor: default; margin-left: 8px;" title="Total Visitors">
+    <span style="font-size: 14px;">👁️👁️</span>
+    <span id="view-counter" style="font-weight: 600; color: var(--text-primary);">...</span>
+  </div>
   <div class="header-spacer"></div>
   <button class="header-btn" onclick="document.getElementById('fileInput').click()">
     <i class="ti ti-upload" aria-hidden="true"></i> <span class="btn-text">Open</span>
@@ -878,6 +885,13 @@
         <i class="ti ti-crop" aria-hidden="true"></i> Crop
       </button>
       <div class="tool-sep"></div>
+      <button class="tool-btn" onclick="performUndo()" id="undoBtn" disabled title="Undo (Ctrl+Z)">
+        <i class="ti ti-arrow-back-up" aria-hidden="true"></i>
+      </button>
+      <button class="tool-btn" onclick="performRedo()" id="redoBtn" disabled title="Redo (Ctrl+Shift+Z)">
+        <i class="ti ti-arrow-forward-up" aria-hidden="true"></i>
+      </button>
+      <div class="tool-sep"></div>
       <button class="tool-btn" onclick="zoomIn()"><i class="ti ti-zoom-in" aria-hidden="true"></i></button>
       <button class="tool-btn" onclick="zoomOut()"><i class="ti ti-zoom-out" aria-hidden="true"></i></button>
       <button class="tool-btn" onclick="zoomFit()"><i class="ti ti-maximize" aria-hidden="true"></i></button>
@@ -946,8 +960,30 @@
       </div>
       <div class="slider-row">
         <div class="slider-label">Font Size <span id="fsVal">32</span>px</div>
-        <input type="range" min="10" max="140" value="32" id="fontSize" oninput="document.getElementById('fsVal').textContent=this.value;renderCanvas()">
+        <input type="range" min="10" max="140" value="32" id="fontSize" oninput="document.getElementById('fsVal').textContent=this.value;syncFontSizeSelect(this.value);renderCanvas()">
       </div>
+      <select id="fontSizeSelect" onchange="document.getElementById('fontSize').value=this.value;document.getElementById('fsVal').textContent=this.value;renderCanvas()">
+        <option value="10">10px</option>
+        <option value="12">12px</option>
+        <option value="14">14px</option>
+        <option value="16">16px</option>
+        <option value="18">18px</option>
+        <option value="20">20px</option>
+        <option value="24">24px</option>
+        <option value="28">28px</option>
+        <option value="32" selected>32px</option>
+        <option value="36">36px</option>
+        <option value="40">40px</option>
+        <option value="48">48px</option>
+        <option value="56">56px</option>
+        <option value="64">64px</option>
+        <option value="72">72px</option>
+        <option value="80">80px</option>
+        <option value="96">96px</option>
+        <option value="112">112px</option>
+        <option value="128">128px</option>
+        <option value="140">140px</option>
+      </select>
       <div class="slider-row">
         <div class="slider-label">Opacity <span id="txOpVal">100</span>%</div>
         <input type="range" min="10" max="100" value="100" id="textOpacity" oninput="document.getElementById('txOpVal').textContent=this.value;renderCanvas()">
@@ -1066,6 +1102,9 @@
     <button class="header-btn" onclick="switchCamera()" style="padding:10px 16px">
       <i class="ti ti-camera-rotate" aria-hidden="true"></i> Switch
     </button>
+    <button class="header-btn" onclick="toggleCameraOrientation()" style="padding:10px 16px" id="cameraOrientationBtn">
+      <i class="ti ti-rotate" id="cameraOrientationIcon" aria-hidden="true"></i> <span id="cameraOrientationLabel">Auto</span>
+    </button>
   </div>
   <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:10px;text-align:center">
     ഫോട്ടോ എടുക്കുമ്പോൾ location automatic ആയി add ആകും
@@ -1113,9 +1152,161 @@ let cameraStream = null;
 let currentFacingMode = 'environment'; // back camera default
 let cameraLocationCache = null;
 
+// ─── UNDO / REDO ────────────────────────────────────────────────
+let undoStack = [];
+let redoStack = [];
+const MAX_HISTORY = 20;
+let preDragSnapshot = null; // holds state captured at slider-drag start
+
 const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d');
 const adj = { brightness:0, contrast:0, exposure:0, saturation:0, hue:0, temperature:0, sharpen:0, blur:0, vignette:0, noise:0 };
+
+// ─── UNDO / REDO CORE ───────────────────────────────────────────
+function captureState() {
+  return {
+    originalImgSrc: originalImg ? originalImg.src : null,
+    bgRemovedImgData: bgRemovedImg ? bgRemovedImg.toDataURL('image/png') : null,
+    currentFilter, rotation, isFlippedH, isFlippedV,
+    adj: { ...adj },
+    locationData: locationData ? { ...locationData } : null,
+    newBGColor, textColor, textBold, textItalic, textShadow,
+    textValue: document.getElementById('textInput').value,
+    fontSelect: document.getElementById('fontSelect').value,
+    fontSize: document.getElementById('fontSize').value,
+    textOpacity: document.getElementById('textOpacity').value,
+    textX: document.getElementById('textX').value,
+    textY: document.getElementById('textY').value,
+    locPos: document.getElementById('locPos').value,
+    locSize: document.getElementById('locSize').value
+  };
+}
+
+function pushUndoState() {
+  undoStack.push(captureState());
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  redoStack = [];
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  const u = document.getElementById('undoBtn');
+  const r = document.getElementById('redoBtn');
+  if (u) u.disabled = undoStack.length === 0;
+  if (r) r.disabled = redoStack.length === 0;
+}
+
+function restoreState(state) {
+  currentFilter = state.currentFilter;
+  rotation = state.rotation;
+  isFlippedH = state.isFlippedH;
+  isFlippedV = state.isFlippedV;
+  Object.assign(adj, state.adj);
+  locationData = state.locationData;
+  newBGColor = state.newBGColor;
+  textColor = state.textColor;
+  textBold = state.textBold;
+  textItalic = state.textItalic;
+  textShadow = state.textShadow;
+
+  // Sync UI controls to match restored state
+  document.getElementById('textInput').value = state.textValue;
+  document.getElementById('fontSelect').value = state.fontSelect;
+  document.getElementById('fontSize').value = state.fontSize;
+  document.getElementById('fsVal').textContent = state.fontSize;
+  document.getElementById('textOpacity').value = state.textOpacity;
+  document.getElementById('txOpVal').textContent = state.textOpacity;
+  document.getElementById('textX').value = state.textX;
+  document.getElementById('txVal').textContent = state.textX;
+  document.getElementById('textY').value = state.textY;
+  document.getElementById('tyVal').textContent = state.textY;
+  document.getElementById('locPos').value = state.locPos;
+  document.getElementById('locSize').value = state.locSize;
+
+  const ids = ['brightness','contrast','exposure','saturation','hue','temperature','sharpen','blur','vignette','noise'];
+  const vals = ['bVal','cVal','exVal','sVal','hVal','tVal','shVal','blVal','vgVal','noVal'];
+  ids.forEach((id, i) => {
+    document.getElementById(id).value = adj[id];
+    document.getElementById(vals[i]).textContent = adj[id];
+  });
+
+  document.getElementById('boldBtn').classList.toggle('active', textBold);
+  document.getElementById('italicBtn').classList.toggle('active', textItalic);
+  document.getElementById('shadowBtn').classList.toggle('active', textShadow);
+  document.querySelectorAll('#textColors .swatch').forEach(s => s.classList.toggle('active', s.dataset.c === textColor));
+
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  const filterOrder = ['none','vivid','bw','sepia','cool','warm','fade','drama','chrome','lomo','vintage','noir'];
+  const filterIdx = filterOrder.indexOf(currentFilter);
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  if (filterIdx >= 0 && filterBtns[filterIdx]) filterBtns[filterIdx].classList.add('active');
+
+  const locBox = document.getElementById('currentLocBox');
+  if (locationData) {
+    locBox.style.display = 'block';
+    document.getElementById('locNameTxt').textContent = locationData.name;
+    document.getElementById('locCoordsTxt').textContent = locationData.coords;
+    document.getElementById('locSearch').value = locationData.name;
+  } else {
+    locBox.style.display = 'none';
+    document.getElementById('locSearch').value = '';
+  }
+
+  const finishRender = () => renderCanvas();
+
+  const applyBg = () => {
+    if (state.bgRemovedImgData) {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        c.getContext('2d').drawImage(img, 0, 0);
+        bgRemovedImg = c;
+        finishRender();
+      };
+      img.src = state.bgRemovedImgData;
+    } else {
+      bgRemovedImg = null;
+      finishRender();
+    }
+  };
+
+  if (state.originalImgSrc && (!originalImg || originalImg.src !== state.originalImgSrc)) {
+    const oimg = new Image();
+    oimg.onload = () => { originalImg = oimg; applyBg(); };
+    oimg.src = state.originalImgSrc;
+  } else {
+    applyBg();
+  }
+}
+
+function performUndo() {
+  if (undoStack.length === 0) return;
+  redoStack.push(captureState());
+  const state = undoStack.pop();
+  restoreState(state);
+  updateUndoRedoButtons();
+  showToast('Undo ചെയ്‌തു');
+}
+
+function performRedo() {
+  if (redoStack.length === 0) return;
+  undoStack.push(captureState());
+  const state = redoStack.pop();
+  restoreState(state);
+  updateUndoRedoButtons();
+  showToast('Redo ചെയ്‌തു');
+}
+
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+    e.preventDefault(); performUndo();
+  } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+    e.preventDefault(); performRedo();
+  }
+});
 
 // ─── FILE LOAD ────────────────────────────────────────────────
 document.getElementById('fileInput').addEventListener('change', e => {
@@ -1130,6 +1321,7 @@ document.getElementById('fileInput').addEventListener('change', e => {
       originalImg = img;
       bgRemovedImg = null;
       resetSliders();
+      undoStack = []; redoStack = []; updateUndoRedoButtons();
       renderCanvas();
       document.getElementById('emptyState').style.display = 'none';
       document.getElementById('canvasWrap').style.display = 'block';
@@ -1161,8 +1353,12 @@ const uploadZone = document.getElementById('uploadZone');
 });
 
 // ─── CAMERA ───────────────────────────────────────────────────
+let cameraOrientationOverride = null; // null = auto (device orientation), 'portrait' or 'landscape' = forced
+
 function getCameraConstraints() {
-  const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+  const isLandscape = cameraOrientationOverride
+    ? (cameraOrientationOverride === 'landscape')
+    : window.matchMedia('(orientation: landscape)').matches;
   // Request resolution matching current device orientation so landscape
   // photos (and their location badge) come out correctly framed.
   const idealWidth = isLandscape ? 1920 : 1080;
@@ -1172,6 +1368,31 @@ function getCameraConstraints() {
     width: { ideal: idealWidth },
     height: { ideal: idealHeight }
   };
+}
+
+function updateCameraOrientationLabel() {
+  const label = document.getElementById('cameraOrientationLabel');
+  const icon = document.getElementById('cameraOrientationIcon');
+  if (!label) return;
+  if (cameraOrientationOverride === 'landscape') {
+    label.textContent = 'Landscape';
+  } else if (cameraOrientationOverride === 'portrait') {
+    label.textContent = 'Portrait';
+  } else {
+    label.textContent = 'Auto';
+  }
+}
+
+async function toggleCameraOrientation() {
+  if (cameraOrientationOverride === null) cameraOrientationOverride = 'landscape';
+  else if (cameraOrientationOverride === 'landscape') cameraOrientationOverride = 'portrait';
+  else cameraOrientationOverride = null;
+  updateCameraOrientationLabel();
+  try {
+    await startCameraStream();
+  } catch (err) {
+    showToast('Orientation മാറ്റാൻ കഴിഞ്ഞില്ല');
+  }
 }
 
 async function startCameraStream() {
@@ -1290,6 +1511,8 @@ async function openCamera() {
   badge.style.display = 'flex';
   badgeText.textContent = 'Location തിരയുന്നു...';
   cameraLocationCache = null;
+  cameraOrientationOverride = null;
+  updateCameraOrientationLabel();
 
   try {
     await startCameraStream();
@@ -1411,6 +1634,7 @@ function editCapturedPhoto() {
     bgRemovedImg = null;
     resetSliders();
     zoomLevel = 1;
+    undoStack = []; redoStack = []; updateUndoRedoButtons();
 
     // Auto-apply location if it was successfully fetched while camera was open
     if (location) {
@@ -1609,10 +1833,15 @@ function drawText(txt, w, h) {
   ctx.restore();
 }
 
-function toggleBold()   { textBold   = !textBold;   document.getElementById('boldBtn').classList.toggle('active', textBold);   renderCanvas(); }
-function toggleItalic() { textItalic = !textItalic; document.getElementById('italicBtn').classList.toggle('active', textItalic); renderCanvas(); }
-function toggleShadow() { textShadow = !textShadow; document.getElementById('shadowBtn').classList.toggle('active', textShadow); renderCanvas(); }
+function syncFontSizeSelect(val) {
+  const sel = document.getElementById('fontSizeSelect');
+  if (sel) sel.value = val;
+}
+function toggleBold()   { if (!originalImg) return; pushUndoState(); textBold   = !textBold;   document.getElementById('boldBtn').classList.toggle('active', textBold);   renderCanvas(); }
+function toggleItalic() { if (!originalImg) return; pushUndoState(); textItalic = !textItalic; document.getElementById('italicBtn').classList.toggle('active', textItalic); renderCanvas(); }
+function toggleShadow() { if (!originalImg) return; pushUndoState(); textShadow = !textShadow; document.getElementById('shadowBtn').classList.toggle('active', textShadow); renderCanvas(); }
 function selectTextColor(el) {
+  if (originalImg) pushUndoState();
   document.querySelectorAll('#textColors .swatch').forEach(s=>s.classList.remove('active'));
   el.classList.add('active'); textColor = el.dataset.c; renderCanvas();
 }
@@ -1773,6 +2002,7 @@ function searchLocation(q) {
 }
 
 function setLocation(loc) {
+  if (originalImg) pushUndoState();
   locationData = loc;
   document.getElementById('currentLocBox').style.display = 'block';
   document.getElementById('locNameTxt').textContent = loc.name;
@@ -1784,6 +2014,7 @@ function setLocation(loc) {
 }
 
 function removeLocation() {
+  if (originalImg) pushUndoState();
   locationData = null;
   document.getElementById('currentLocBox').style.display = 'none';
   document.getElementById('locSearch').value = '';
@@ -1916,6 +2147,7 @@ async function removeBGWithAPI() {
   const apiKey = document.getElementById('apiKeyInput').value.trim();
   if (!apiKey) { setBGStatus('API Key ആവശ്യം ഉണ്ട്', 'error'); return; }
 
+  pushUndoState();
   setBGStatus('Processing...', 'processing');
   setProgress(20, true);
 
@@ -2024,6 +2256,7 @@ canvas.addEventListener('click', e => {
 
 function removeBGLocal() {
   if (!originalImg) { showToast('Image upload ചെയ്യൂ'); return; }
+  pushUndoState();
   setBGStatus('Processing locally...', 'processing');
   setProgress(20, true);
 
@@ -2072,6 +2305,8 @@ function removeBGLocal() {
 }
 
 function restoreBG() {
+  if (!originalImg) return;
+  pushUndoState();
   bgRemovedImg = null;
   setBGStatus('Original background restored', '');
   renderCanvas();
@@ -2079,6 +2314,7 @@ function restoreBG() {
 }
 
 function setNewBG(color, el) {
+  if (originalImg) pushUndoState();
   newBGColor = color;
   document.querySelectorAll('.bg-color-swatch, .checker-swatch').forEach(s => s.classList.remove('active'));
   if (el) el.classList.add('active');
@@ -2230,6 +2466,7 @@ function initCropListeners() {
 
 function applyCrop() {
   if (!cropRect || !originalImg) { showToast('Crop area select ചെയ്യൂ'); return; }
+  pushUndoState();
   renderCanvas(true); // render without location/text overlays for a clean base capture
   const { x, y, w, h } = cropRect;
   let imgData;
@@ -2267,10 +2504,10 @@ function cancelCrop() {
   if (actions) actions.style.display = 'none';
 }
 
-function rotateLeft()  { rotation = (rotation - 90 + 360) % 360; renderCanvas(); }
-function rotateRight() { rotation = (rotation + 90) % 360; renderCanvas(); }
-function flipH()       { isFlippedH = !isFlippedH; renderCanvas(); }
-function flipV()       { isFlippedV = !isFlippedV; renderCanvas(); }
+function rotateLeft()  { if (!originalImg) return; pushUndoState(); rotation = (rotation - 90 + 360) % 360; renderCanvas(); }
+function rotateRight() { if (!originalImg) return; pushUndoState(); rotation = (rotation + 90) % 360; renderCanvas(); }
+function flipH()       { if (!originalImg) return; pushUndoState(); isFlippedH = !isFlippedH; renderCanvas(); }
+function flipV()       { if (!originalImg) return; pushUndoState(); isFlippedV = !isFlippedV; renderCanvas(); }
 function zoomIn()      { zoomLevel = Math.min(4, zoomLevel * 1.25); renderCanvas(); }
 function zoomOut()     { zoomLevel = Math.max(0.2, zoomLevel / 1.25); renderCanvas(); }
 function zoomFit()     { zoomLevel = 1; renderCanvas(); }
@@ -2287,6 +2524,7 @@ function updateAdj() {
 }
 
 function applyFilter(f, btn) {
+  if (originalImg) pushUndoState();
   currentFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -2303,6 +2541,7 @@ function resetSliders() {
 }
 
 function resetAll() {
+  if (originalImg) pushUndoState();
   bgRemovedImg = null; locationData = null;
   document.getElementById('locSearch').value = '';
   document.getElementById('currentLocBox').style.display = 'none';
@@ -2383,6 +2622,31 @@ setBGMethod('ai', null);
 initCropListeners();
 updateRightPanelVisibility();
 updateCanvasCursor();
+updateUndoRedoButtons();
+
+// Continuous sliders (adjustments, text/location position) get ONE undo
+// checkpoint per drag gesture — captured at drag-start, not on every tick —
+// so Undo reverts a whole slider adjustment in one step. Camera zoom and
+// export quality sliders are excluded since they aren't editable image state.
+(function initSliderUndoCheckpoints() {
+  const excluded = ['cameraZoomSlider', 'quality'];
+  document.querySelectorAll('input[type=range]').forEach(slider => {
+    if (excluded.includes(slider.id)) return;
+    const start = () => { if (originalImg) preDragSnapshot = captureState(); };
+    const commit = () => {
+      if (preDragSnapshot) {
+        undoStack.push(preDragSnapshot);
+        if (undoStack.length > MAX_HISTORY) undoStack.shift();
+        redoStack = [];
+        updateUndoRedoButtons();
+        preDragSnapshot = null;
+      }
+    };
+    slider.addEventListener('mousedown', start);
+    slider.addEventListener('touchstart', start, { passive: true });
+    slider.addEventListener('change', commit);
+  });
+})();
 
 // App opens straight into the camera. If permission is denied or no
 // camera is available, openCamera() already falls back gracefully and
@@ -2397,6 +2661,20 @@ openCamera();
         .catch(err => console.error('Service Worker Registration failed:', err));
     });
   }
+</script>
+<script>
+  // GeoSnap View Counter Script
+  const apiUrl = "https://sumteck.tksumesh85.workers.dev/?site=geosnap";
+
+  fetch(apiUrl)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById("view-counter").innerText = data.views;
+    })
+    .catch(error => {
+      console.error("Error loading view count:", error);
+      document.getElementById("view-counter").innerText = "N/A";
+    });
 </script>
 </body>
 </html>
